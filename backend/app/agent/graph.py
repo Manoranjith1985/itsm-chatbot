@@ -138,7 +138,9 @@ async def run_agent(message: str, history: List[Dict], user: User) -> Dict[str, 
             ])
             text = f"Found **{len(tickets)}** ticket(s):\n\n{ticket_lines}"
 
-            chart = _build_chart(tickets, chart_type) if chart_type else None
+            # Always render a chart — default to "bar" (priority breakdown) when not specified
+            effective_chart_type = chart_type or "bar"
+            chart = _build_chart(tickets, effective_chart_type)
             return {"text": text, "chart": chart}
 
         except Exception as e:
@@ -196,7 +198,4 @@ def _build_chart(tickets, chart_type: str) -> dict:
         counts = Counter(t.assignee or "Unassigned" for t in tickets)
         return {
             "type": "line",
-            "title": "Tickets by Assignee",
-            "labels": list(counts.keys()),
-            "values": list(counts.values()),
-        }
+    
