@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from typing import List
 
 
@@ -22,8 +23,20 @@ class Settings(BaseSettings):
     LITELLM_DEFAULT_MODEL: str = "gpt-4o-mini"
     OPENAI_API_KEY: str = ""
 
-    # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
+    # CORS — includes GitHub Pages frontend by default
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "https://manoranjith1985.github.io",
+    ]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_origins(cls, v):
+        """Accept either a list or a comma-separated string from env vars."""
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
