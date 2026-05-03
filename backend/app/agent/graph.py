@@ -198,4 +198,8 @@ def _build_chart(tickets, chart_type: str) -> dict:
         counts = Counter(t.assignee or "Unassigned" for t in tickets)
         return {
             "type": "line",
+            "title": "Tickets by Assignee",
+            "labels": list(counts.keys()),
+            "values": list(counts.values()),
+        }
     
