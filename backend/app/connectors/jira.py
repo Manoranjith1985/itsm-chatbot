@@ -89,14 +89,17 @@ class JiraConnector(ITSMConnector):
         if filters.query:
             jql_parts.append(f'text ~ "{filters.query}"')
 
-        jql = " AND ".join(jql_parts) if jql_parts else "ORDER BY created DESC"
+        # Always need at least one condition for valid JQL
         if jql_parts:
-            jql += " ORDER BY created DESC"
+            jql = " AND ".join(jql_parts) + " ORDER BY created DESC"
+        else:
+            jql = "project is not EMPTY ORDER BY created DESC"
 
         payload = {
             "jql": jql,
             "maxResults": filters.limit,
             "fields": FIELDS,
+            "fieldsByKeys": False,
         }
 
         async with self._client() as client:
@@ -105,13 +108,14 @@ class JiraConnector(ITSMConnector):
                 f"{self.base_url}/search/jql",
                 json=payload,
             )
-            if resp.status_code == 404:
+            if resp.status_code in (404, 405):
                 # Fallback to legacy GET endpoint for older Jira instances
                 resp = await client.get(
                     f"{self.base_url}/search",
                     params={"jql": jql, "maxResults": filters.limit, "fields": ",".join(FIELDS)},
                 )
-            resp.raise_for_status()
+            if not resp.is_success:
+                raise Exception(f"Jira API error {resp.status_code}: {resp.text[:300]}")
             data = resp.json()
 
         return [self._parse_ticket(i) for i in data.get("issues", [])]
