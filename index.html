@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ITSM-PMO AI Chatbot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
+
+/* ── Auth Screen ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#065A82 100%)}
+.auth-card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo h1{font-size:22px;font-weight:700;color:#e2e8f0;margin-top:10px}
+.auth-logo p{font-size:13px;color:#64748b;margin-top:4px}
+.auth-tabs{display:flex;margin-bottom:24px;background:#0f172a;border-radius:8px;padding:4px}
+.auth-tab{flex:1;padding:8px;text-align:center;font-size:13px;cursor:pointer;border-radius:6px;transition:.2s;color:#64748b;font-weight:500}
+.auth-tab.active{background:#065A82;color:#fff}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;outline:none;transition:.2s}
+.form-group input:focus{border-color:#065A82;box-shadow:0 0 0 3px rgba(6,90,130,.15)}
+.btn-primary{width:100%;padding:11px;background:#065A82;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px}
+.btn-primary:hover{background:#1C7293}
+.auth-error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+
+/* ── App Layout ── */
+#app{display:none;height:100vh;flex-direction:row}
+
+/* Sidebar */
+#sidebar{width:260px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:1px solid #334155;display:flex;align-items:center;gap:10px}
+.sidebar-header h2{font-size:14px;font-weight:700;color:#e2e8f0}
+.sidebar-header span{font-size:11px;color:#02C39A;background:rgba(2,195,154,.1);padding:2px 8px;border-radius:20px;font-weight:600}
+.new-chat-btn{margin:12px;padding:10px;background:#065A82;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.2s}
+.new-chat-btn:hover{background:#1C7293}
+.conv-list{flex:1;overflow-y:auto;padding:8px}
+.conv-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:.2s}
+.conv-item:hover{background:#334155}
+.conv-item.active{background:#0f172a;border-color:#065A82}
+.conv-item-title{font-size:12px;font-weight:500;color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-item-date{font-size:10px;color:#475569;margin-top:2px}
+.sidebar-footer{padding:12px;border-top:1px solid #334155}
+.user-info{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;background:#065A82;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.user-email{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.logout-btn{background:none;border:none;color:#475569;cursor:pointer;font-size:18px;padding:4px;transition:.2s}
+.logout-btn:hover{color:#ef4444}
+
+/* Main Chat */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-header{padding:14px 20px;background:#1e293b;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between}
+.chat-header-info h3{font-size:15px;font-weight:600;color:#e2e8f0}
+.chat-header-info p{font-size:11px;color:#64748b;margin-top:1px}
+.status-dot{width:8px;height:8px;background:#02C39A;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+
+/* Messages */
+.msg{display:flex;gap:10px;max-width:85%;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;font-weight:700}
+.msg.assistant .msg-avatar{background:#065A82;color:#fff}
+.msg.user .msg-avatar{background:#1C7293;color:#fff}
+.msg-body{flex:1}
+.msg-bubble{padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.6}
+.msg.assistant .msg-bubble{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-top-left-radius:4px}
+.msg.user .msg-bubble{background:#065A82;color:#fff;border-top-right-radius:4px}
+.msg-time{font-size:10px;color:#475569;margin-top:4px;text-align:right}
+.msg.assistant .msg-time{text-align:left}
+
+/* Typing indicator */
+.typing-indicator{display:flex;align-items:center;gap:4px;padding:12px 16px;background:#1e293b;border:1px solid #334155;border-radius:12px;border-top-left-radius:4px;width:64px}
+.typing-dot{width:6px;height:6px;background:#065A82;border-radius:50%;animation:bounce .9s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* Chart */
+.chart-container{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin-top:10px}
+.chart-title{font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:120px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar{width:100%;background:linear-gradient(180deg,#1C7293,#065A82);border-radius:4px 4px 0 0;min-height:4px;transition:.6s ease}
+.bar-label{font-size:9px;color:#64748b;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.bar-val{font-size:10px;color:#94a3b8;font-weight:600}
+.pie-chart{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.pie-slice{display:flex;align-items:center;gap:6px}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pie-label{font-size:11px;color:#94a3b8}
+
+/* Input */
+.chat-input-area{padding:16px 20px;background:#1e293b;border-top:1px solid #334155}
+.suggestions{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.suggestion-chip{background:#0f172a;border:1px solid #334155;color:#94a3b8;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;transition:.2s;white-space:nowrap}
+.suggestion-chip:hover{border-color:#065A82;color:#e2e8f0;background:#1e293b}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.chat-textarea{flex:1;background:#0f172a;border:1px solid #334155;border-radius:10px;color:#e2e8f0;font-size:14px;padding:11px 14px;resize:none;outline:none;font-family:inherit;max-height:120px;min-height:44px;line-height:1.5;transition:.2s}
+.chat-textarea:focus{border-color:#065A82;box-shadow:0 0 0 3px rgba(6,90,130,.15)}
+.send-btn{width:44px;height:44px;background:#065A82;border:none;border-radius:10px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+.send-btn:hover{background:#1C7293}
+.send-btn:disabled{background:#334155;cursor:not-allowed}
+.send-btn svg{width:18px;height:18px}
+
+/* Welcome */
+.welcome-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
+.welcome-screen h2{font-size:24px;font-weight:700;color:#e2e8f0;margin-bottom:8px}
+.welcome-screen p{font-size:14px;color:#64748b;margin-bottom:32px;max-width:400px;line-height:1.7}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:480px;width:100%}
+.feature-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px;text-align:left;cursor:pointer;transition:.2s}
+.feature-card:hover{border-color:#065A82;background:#1a2d40}
+.feature-card .icon{font-size:22px;margin-bottom:8px}
+.feature-card h4{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px}
+.feature-card p{font-size:11px;color:#64748b;line-height:1.5}
+
+/* Markdown styling */
+.msg-bubble strong{font-weight:700;color:#93c5fd}
+.msg.user .msg-bubble strong{color:#bfdbfe}
+.msg-bubble code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:12px}
+.msg-bubble ul,.msg-bubble ol{padding-left:18px;margin:6px 0}
+.msg-bubble li{margin:3px 0}
+.msg-bubble a{color:#38bdf8;text-decoration:none}
+.msg-bubble a:hover{text-decoration:underline}
+.msg-bubble hr{border:none;border-top:1px solid #334155;margin:10px 0}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:1000;animation:slideUp .3s ease;display:none}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Responsive */
+@media(max-width:640px){
+  #sidebar{display:none}
+  .feature-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Auth Screen ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div style="font-size:36px">🤖</div>
+      <h1>ITSM-PMO AI Chatbot</h1>
+      <p>Intelligent ticket management & analytics</p>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchTab('register')">Register</div>
+    </div>
+    <div id="login-form">
+      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min 8 characters"/></div>
+      <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <span style="font-size:20px">🤖</span>
+      <h2>ITSM Chatbot</h2>
+      <span>AI</span>
+    </div>
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Conversation
+    </button>
+    <div class="conv-list" id="conv-list"></div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span class="user-email" id="user-email-display"></span>
+        <button class="logout-btn" onclick="logout()" title="Sign out">⏻</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <h3><span class="status-dot"></span>AI Assistant</h3>
+        <p id="chat-subtitle">Ask me anything about your tickets, projects, or reports</p>
+      </div>
+      <div style="font-size:11px;color:#475569" id="conv-id-display"></div>
+    </div>
+
+    <!-- Welcome / Chat area -->
+    <div id="chat-area" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+      <div id="welcome" class="welcome-screen">
+        <div style="font-size:48px;margin-bottom:16px">🤖</div>
+        <h2>Hello! How can I help?</h2>
+        <p>I can query your Jira tickets, generate analytics charts, summarise sprint status, and create tickets — all via natural language.</p>
+        <div class="feature-grid">
+          <div class="feature-card" onclick="sendQuick('Show me all open P1 tickets')">
+            <div class="icon">🔴</div>
+            <h4>Critical Tickets</h4>
+            <p>Show me all open P1 tickets</p>
+          </div>
+          <div class="feature-card" onclick="sendQuick('Give me a bar chart of tickets by priority')">
+            <div class="icon">📊</div>
+            <h4>Analytics Chart</h4>
+            <p>Bar chart of tickets by priority</p>
+          </div>
+          <div class="feature-card" onclick="sendQuick('How many tickets are in progress this week?')">
+            <div class="icon">📋</div>
+            <h4>Sprint Status</h4>
+            <p>How many tickets are in progress?</p>
+          </div>
+          <div class="feature-card" onclick="sendQuick('Show me tickets assigned to me as a pie chart')">
+            <div class="icon">🥧</div>
+            <h4>My Workload</h4>
+            <p>Tickets assigned to me as pie chart</p>
+          </div>
+        </div>
+      </div>
+      <div id="messages" class="chat-messages" style="display:none"></div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="suggestions" id="suggestions">
+        <span class="suggestion-chip" onclick="sendQuick('Show all open tickets')">🎫 Open tickets</span>
+        <span class="suggestion-chip" onclick="sendQuick('Tickets by priority as bar chart')">📊 Priority chart</span>
+        <span class="suggestion-chip" onclick="sendQuick('What tickets are blocked?')">🚫 Blocked tickets</span>
+        <span class="suggestion-chip" onclick="sendQuick('Summarise this sprint')">⚡ Sprint summary</span>
+      </div>
+      <div class="input-row">
+        <textarea id="chat-input" class="chat-textarea" rows="1" placeholder="Ask about tickets, request a chart, or search projects…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────
+const API = 'https://itsm-chatbot-backend.onrender.com';
+
+// ── State ────────────────────────────────────────────────────────────────
+let token = localStorage.getItem('itsm_token') || '';
+let userEmail = localStorage.getItem('itsm_email') || '';
+let currentConvId = null;
+let isLoading = false;
+let conversations = [];
+let messageHistory = [];
+
+// ── Boot ─────────────────────────────────────────────────────────────────
+window.onload = () => {
+  if (token) showApp();
+};
+
+// ── Auth ─────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('login-form').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!email || !pass) return showAuthError('Please enter email and password');
+  try {
+    const r = await fetch(`${API}/api/v1/auth/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d = await r.json();
+    if (!r.ok) return showAuthError(d.detail || 'Login failed');
+    token = d.access_token;
+    userEmail = email;
+    localStorage.setItem('itsm_token', token);
+    localStorage.setItem('itsm_email', email);
+    showApp();
+  } catch(e) { showAuthError('Cannot reach server. Check your connection.'); }
+}
+
+async function doRegister() {
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  if (!email || !pass) return showAuthError('Please fill all fields');
+  if (pass.length < 6) return showAuthError('Password must be at least 6 characters');
+  try {
+    const r = await fetch(`${API}/api/v1/auth/register`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d = await r.json();
+    if (!r.ok) return showAuthError(d.detail || 'Registration failed');
+    showToast('Account created! Please sign in.');
+    switchTab('login');
+    document.getElementById('login-email').value = email;
+  } catch(e) { showAuthError('Cannot reach server.'); }
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = '';
+}
+
+function logout() {
+  localStorage.removeItem('itsm_token');
+  localStorage.removeItem('itsm_email');
+  token = ''; userEmail = ''; currentConvId = null; messageHistory = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ── App ───────────────────────────────────────────────────────────────────
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = userEmail;
+  document.getElementById('user-avatar').textContent = (userEmail[0]||'U').toUpperCase();
+  loadConversations();
+}
+
+async function loadConversations() {
+  try {
+    const r = await authFetch('/api/v1/conversations');
+    conversations = await r.json();
+    renderConvList();
+  } catch(e) {}
+}
+
+function renderConvList() {
+  const el = document.getElementById('conv-list');
+  if (!conversations.length) { el.innerHTML = '<div style="padding:16px;font-size:11px;color:#475569;text-align:center">No conversations yet</div>'; return; }
+  el.innerHTML = conversations.slice().reverse().map(c=>`
+    <div class="conv-item${c.id===currentConvId?' active':''}" onclick="loadConv('${c.id}')">
+      <div class="conv-item-title">💬 Conversation</div>
+      <div class="conv-item-date">${new Date(c.created_at).toLocaleDateString()} · ${c.message_count} messages</div>
+    </div>`).join('');
+}
+
+function newChat() {
+  currentConvId = null;
+  messageHistory = [];
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+  document.getElementById('conv-id-display').textContent = '';
+  document.getElementById('chat-subtitle').textContent = 'Ask me anything about your tickets, projects, or reports';
+  renderConvList();
+}
+
+async function loadConv(id) {
+  currentConvId = id;
+  renderConvList();
+  // For simplicity, just highlight — full message reload would need a conversations/{id} endpoint
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('conv-id-display').textContent = `Conv: ${id.slice(-6)}`;
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function sendQuick(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  // Show chat area
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('suggestions').style.display = 'none';
+
+  input.value = ''; input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Add user message
+  appendMessage('user', text);
+  messageHistory.push({role:'user', content:text});
+
+  // Typing indicator
+  const typingId = 'typing-' + Date.now();
+  appendTyping(typingId);
+  scrollBottom();
+
+  try {
+    const r = await authFetch('/api/v1/chat', {
+      method: 'POST',
+      body: JSON.stringify({message: text, conversation_id: currentConvId})
+    });
+
+    if (r.status === 401) { logout(); return; }
+    const d = await r.json();
+
+    removeTyping(typingId);
+
+    if (d.conversation_id) {
+      currentConvId = d.conversation_id;
+      document.getElementById('conv-id-display').textContent = `Conv: ${d.conversation_id.slice(-6)}`;
+    }
+
+    const responseText = d.response || d.detail || 'No response';
+    appendMessage('assistant', responseText, d.chart);
+    messageHistory.push({role:'assistant', content:responseText});
+    await loadConversations();
+
+  } catch(e) {
+    removeTyping(typingId);
+    appendMessage('assistant', '⚠️ Connection error. The server may be waking up (free tier). Please try again in a moment.');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  scrollBottom();
+}
+
+function appendMessage(role, text, chart) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = role==='user' ? (userEmail[0]||'U').toUpperCase() : '🤖';
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div class="msg-body">
+      <div class="msg-bubble">${renderMarkdown(text)}</div>
+      ${chart ? renderChart(chart) : ''}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  msgs.appendChild(div);
+}
+
+function appendTyping(id) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant'; div.id = id;
+  div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-body"><div class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>`;
+  msgs.appendChild(div);
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Markdown renderer (lightweight) ──────────────────────────────────────
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/^### (.+)$/gm,'<strong style="font-size:13px;color:#94a3b8">$1</strong>')
+    .replace(/^## (.+)$/gm,'<strong style="font-size:14px">$1</strong>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>')
+    .replace(/\n/g,'<br>');
+}
+
+// ── Chart renderer ────────────────────────────────────────────────────────
+function renderChart(chart) {
+  if (!chart || !chart.labels || !chart.values) return '';
+  const COLORS = ['#065A82','#1C7293','#02C39A','#F59E0B','#6366F1','#EF4444','#84B59F'];
+
+  if (chart.type === 'pie') {
+    const total = chart.values.reduce((a,b)=>a+b,0);
+    const slices = chart.labels.map((l,i)=>`
+      <div class="pie-slice">
+        <span class="pie-dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        <span class="pie-label">${l}: <strong>${chart.values[i]}</strong> (${Math.round(chart.values[i]/total*100)}%)</span>
+      </div>`).join('');
+    return `<div class="chart-container"><div class="chart-title">${chart.title||'Distribution'}</div><div class="pie-chart">${slices}</div></div>`;
+  }
+
+  const max = Math.max(...chart.values, 1);
+  const bars = chart.labels.map((l,i)=>`
+    <div class="bar-wrap">
+      <span class="bar-val">${chart.values[i]}</span>
+      <div class="bar" style="height:${Math.max(8, Math.round((chart.values[i]/max)*100))}%;background:linear-gradient(180deg,${COLORS[i%COLORS.length]},${COLORS[(i+1)%COLORS.length]})"></div>
+      <span class="bar-label" title="${l}">${l}</span>
+    </div>`).join('');
+  return `<div class="chart-container"><div class="chart-title">${chart.title||'Chart'}</div><div class="chart-bars">${bars}</div></div>`;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function authFetch(path, opts={}) {
+  return fetch(API + path, {
+    ...opts,
+    headers: {'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...(opts.headers||{})},
+  });
+}
+
+function showToast(msg, ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(()=>t.style.display='none', ms);
+}
+</script>
+</body>
+</html>
