@@ -68,8 +68,25 @@ class JiraConnector(ITSMConnector):
         if filters.status:
             # Map plain words to Jira status names
             status_map = {
-                "open": "To Do", "in_progress": "In Progress",
-                "closed": "Done", "blocked": "Blocked",
+                "open": "To Do",
+                "to do": "To Do",
+                "todo": "To Do",
+                "new": "To Do",
+                "in_progress": "In Progress",
+                "in progress": "In Progress",
+                "inprogress": "In Progress",
+                "active": "In Progress",
+                "done": "Done",
+                "closed": "Done",
+                "completed": "Done",
+                "complete": "Done",
+                "finished": "Done",
+                "resolved": "Done",
+                "resolve": "Done",
+                "blocked": "Blocked",
+                "in_review": "In Review",
+                "in review": "In Review",
+                "review": "In Review",
             }
             jira_status = status_map.get(filters.status.lower(), filters.status)
             jql_parts.append(f'status = "{jira_status}"')
