@@ -1,9 +1,7 @@
-﻿"""Abstract base class for all ITSM connectors."""
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-
+from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class TicketFilter(BaseModel):
@@ -12,7 +10,7 @@ class TicketFilter(BaseModel):
     assignee: Optional[str] = None
     project: Optional[str] = None
     query: Optional[str] = None
-    limit: int = 50
+    limit: int = 20
 
 
 class Ticket(BaseModel):
@@ -23,41 +21,52 @@ class Ticket(BaseModel):
     priority: str
     assignee: Optional[str] = None
     reporter: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    tool: str
-    raw: Dict[str, Any] = {}
+    project: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    url: Optional[str] = None
+    labels: List[str] = []
 
 
 class CreateTicketRequest(BaseModel):
     title: str
     description: str
-    priority: str
+    project: str
+    priority: str = "Medium"
     assignee: Optional[str] = None
-    project: Optional[str] = None
-    extra: Dict[str, Any] = {}
+    labels: List[str] = []
 
 
 class UpdateTicketRequest(BaseModel):
+    ticket_id: str
     status: Optional[str] = None
-    assignee: Optional[str] = None
     priority: Optional[str] = None
+    assignee: Optional[str] = None
     comment: Optional[str] = None
-    extra: Dict[str, Any] = {}
 
 
 class ConnectionStatus(BaseModel):
-    ok: bool
-    message: str
-    tool: str
+    connected: bool
+    error: Optional[str] = None
+    details: Optional[dict] = None
 
 
 class ITSMConnector(ABC):
     @abstractmethod
-    async def get_tickets(self, filters: TicketFilter) -> List[Ticket]: ...
+    async def get_tickets(self, filters: TicketFilter) -> List[Ticket]:
+        pass
+
     @abstractmethod
-    async def create_ticket(self, data: CreateTicketRequest) -> Ticket: ...
+    async def create_ticket(self, request: CreateTicketRequest) -> Ticket:
+        pass
+
     @abstractmethod
-    async def update_ticket(self, ticket_id: str, data: UpdateTicketRequest) -> Ticket: ...
+    async def update_ticket(self, request: UpdateTicketRequest) -> Ticket:
+        pass
+
     @abstractmethod
-    async def test_connection(self) -> ConnectionStatus: ...
+    async def test_connection(self) -> ConnectionStatus:
+        pass
+
+
+CONNECTOR_REGISTRY: dict = {}

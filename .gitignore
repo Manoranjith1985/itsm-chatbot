@@ -1,4 +1,4 @@
-﻿.env
+.env
 *.pem
 *.key
 __pycache__/
@@ -7,8 +7,8 @@ __pycache__/
 venv/
 node_modules/
 dist/
-.next/
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.tsbuildinfo
