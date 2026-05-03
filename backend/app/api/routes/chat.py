@@ -74,3 +74,24 @@ async def websocket_chat(websocket: WebSocket, conversation_id: str):
 async def list_conversations(current_user: User = Depends(get_current_user)):
     convs = await Conversation.find(Conversation.user_id == str(current_user.id)).to_list()
     return [{"id": str(c.id), "created_at": c.created_at, "message_count": len(c.messages)} for c in convs]
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+    from beanie import PydanticObjectId
+    conv = await Conversation.get(PydanticObjectId(conversation_id))
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if conv.user_id != str(current_user.id):
+        raise HTTPException(status_code=403, detail="Not your conversation")
+    await conv.delete()
+    return {"deleted": conversation_id}
+
+
+@router.delete("/conversations")
+async def delete_all_conversations(current_user: User = Depends(get_current_user)):
+    convs = await Conversation.find(Conversation.user_id == str(current_user.id)).to_list()
+    count = len(convs)
+    for c in convs:
+        await c.delete()
+    return {"deleted": count}
