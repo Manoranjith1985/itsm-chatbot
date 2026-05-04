@@ -366,16 +366,32 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   if (!email || !pass) return showAuthError('Please enter email and password');
+  const btn = document.querySelector('#login-form .btn-primary');
+  btn.textContent = 'Signing in…'; btn.disabled = true;
   try {
-    const r = await fetch(`${API}/api/v1/auth/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-    const d = await r.json();
-    if (!r.ok) return showAuthError(d.detail || 'Login failed');
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 15000);
+    const r = await fetch(`${API}/api/v1/auth/login`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass}),
+      signal: controller.signal
+    });
+    clearTimeout(tid);
+    let d;
+    try { d = await r.json(); } catch(je) { d = {}; }
+    if (!r.ok) return showAuthError(d.detail || `Login failed (HTTP ${r.status})`);
     token = d.access_token;
     userEmail = email;
     localStorage.setItem('itsm_token', token);
     localStorage.setItem('itsm_email', email);
     showApp();
-  } catch(e) { showAuthError('Cannot reach server. Check your connection.'); }
+  } catch(e) {
+    if (e.name === 'AbortError') showAuthError('Request timed out — server took too long to respond.');
+    else showAuthError('Cannot reach server: ' + e.message);
+  } finally {
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
 }
 
 async function doRegister() {
