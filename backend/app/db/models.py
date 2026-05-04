@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRole(str, Enum):
+    superadmin = "superadmin"
     admin = "admin"
     agent = "agent"
     viewer = "viewer"
@@ -56,6 +57,19 @@ class Conversation(Document):
 
     class Settings:
         name = "conversations"
+
+
+class Doc(Document):
+    """Uploaded document for knowledge base."""
+    owner_id: str
+    filename: str
+    content_type: str        # e.g. application/pdf
+    size_bytes: int
+    text_content: str        # extracted plain text
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "docs"
 
 
 class FeatureFlag(Document):

@@ -200,22 +200,75 @@ body.light .msg.assistant .msg-bubble code{background:rgba(0,0,0,.06)}
   .feature-grid{grid-template-columns:1fr}
 }
 </style>
-</head>
-<body>
+<style>
+/* ── Extra CSS for new screens ─────────────────────────────────────────── */
+.nav-tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--border);background:var(--bg-panel)}
+.nav-tab{padding:8px 16px;border-radius:8px 8px 0 0;font-size:13px;font-weight:500;cursor:pointer;color:var(--text-3);transition:.15s;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
+.nav-tab:hover{color:var(--text-1);background:var(--bg-base)}
+.nav-tab.active{color:var(--accent);background:var(--bg-base);border-color:var(--border);font-weight:600}
+.nav-tab.admin-tab{color:#f59e0b}
+.nav-tab.admin-tab.active{color:#f59e0b;border-color:var(--border)}
 
-<!-- ── Auth Screen ── -->
-<div id="auth-screen">
+.screen{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.screen.active{display:flex}
+
+/* Users screen */
+.admin-screen{padding:24px;overflow-y:auto;gap:16px}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.admin-title{font-size:18px;font-weight:700;color:var(--text-1)}
+.stat-cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.stat-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;min-width:120px;flex:1}
+.stat-card .num{font-size:28px;font-weight:700;color:var(--accent)}
+.stat-card .lbl{font-size:12px;color:var(--text-3);margin-top:2px}
+.user-table{width:100%;border-collapse:collapse;font-size:13px}
+.user-table th{text-align:left;padding:10px 12px;color:var(--text-3);font-weight:600;border-bottom:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.user-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:middle}
+.user-table tr:hover td{background:var(--bg-panel)}
+.role-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.role-superadmin{background:#7c3aed22;color:#a78bfa;border:1px solid #7c3aed55}
+.role-admin{background:#065f4622;color:#34d399;border:1px solid #065f4655}
+.role-agent{background:#1e3a5f22;color:#60a5fa;border:1px solid #1e3a5f55}
+.role-viewer{background:#374151;color:#9ca3af;border:1px solid #4b5563}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-active{background:#22c55e}
+.status-inactive{background:#ef4444}
+.action-btn{padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--bg-panel);color:var(--text-2);transition:.15s}
+.action-btn:hover{background:var(--border)}
+.action-btn.danger{color:#ef4444;border-color:#ef444455}
+.action-btn.danger:hover{background:#ef444422}
+.role-select{background:var(--bg-panel);border:1px solid var(--border);color:var(--text-1);padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer}
+
+/* Docs screen */
+.docs-screen{padding:24px;overflow-y:auto;gap:16px}
+.docs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent)11}
+.upload-zone .icon{font-size:36px;margin-bottom:8px}
+.upload-zone p{color:var(--text-3);font-size:14px;margin:4px 0}
+.upload-zone strong{color:var(--text-1)}
+.docs-grid{display:flex;flex-direction:column;gap:10px}
+.doc-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.doc-icon{font-size:24px;flex-shrink:0}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-weight:600;font-size:14px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:12px;color:var(--text-3);margin-top:3px}
+.doc-preview{font-size:12px;color:var(--text-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upload-progress{display:none;margin-top:12px}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+</style>
+
+<!-- ── Auth screen ──────────────────────────────────────────────────────── -->
+<div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
   <div class="auth-card">
-    <div class="auth-logo">
-      <div style="font-size:36px">🤖</div>
-      <h1>ITSM-PMO AI Chatbot</h1>
-      <p>Intelligent ticket management &amp; analytics</p>
-    </div>
-    <div id="auth-error" class="auth-error"></div>
+    <div class="auth-logo">🤖</div>
+    <h1 class="auth-title">ITSM AI Chatbot</h1>
+    <p class="auth-subtitle">AI-powered IT Service Management</p>
     <div class="auth-tabs">
       <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
       <div class="auth-tab" onclick="switchTab('register')">Register</div>
     </div>
+    <div id="auth-error" class="auth-error"></div>
     <div id="login-form">
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
@@ -223,109 +276,154 @@ body.light .msg.assistant .msg-bubble code{background:rgba(0,0,0,.06)}
     </div>
     <div id="register-form" style="display:none">
       <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
-      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min 8 characters"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Min 6 characters"/></div>
       <button class="btn-primary" onclick="doRegister()">Create Account →</button>
     </div>
   </div>
 </div>
 
-<!-- ── Main App ── -->
-<div id="app">
+<!-- ── Main app ─────────────────────────────────────────────────────────── -->
+<div id="app" style="display:none;height:100vh;flex-direction:row">
+
   <!-- Sidebar -->
-  <div id="sidebar">
+  <div class="sidebar">
     <div class="sidebar-header">
-      <span style="font-size:20px">🤖</span>
-      <h2>ITSM Chatbot</h2>
-      <span class="badge">AI</span>
+      <div class="sidebar-logo">🤖 ITSM Bot</div>
+      <button id="theme-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌙 Dark</button>
     </div>
-    <button class="new-chat-btn" onclick="newChat()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Conversation
-    </button>
-    <button class="clear-all-btn" id="clear-all-btn" onclick="clearAllConversations()" style="display:none">
-      🗑️ Clear All History
-    </button>
-    <div class="conv-list" id="conv-list"></div>
+    <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+    <div style="flex:1;overflow-y:auto">
+      <div id="conv-list"></div>
+    </div>
+    <button id="clear-all-btn" class="icon-btn" onclick="deleteAllConversations()" style="margin:8px;font-size:12px;color:#ef4444;border-color:#ef444455" title="Clear all chats">🗑 Clear All</button>
     <div class="sidebar-footer">
       <div class="user-info">
         <div class="user-avatar" id="user-avatar">U</div>
-        <span class="user-email" id="user-email-display"></span>
-        <button class="logout-btn" onclick="logout()" title="Sign out">⏻</button>
+        <div>
+          <div id="user-email-display" style="font-size:12px;font-weight:600;color:var(--text-1)"></div>
+          <div id="user-role-display" style="font-size:11px;color:var(--text-3)"></div>
+        </div>
       </div>
+      <button class="icon-btn" onclick="logout()" title="Sign out">↩</button>
     </div>
   </div>
 
-  <!-- Main -->
-  <div id="main">
-    <div class="chat-header">
-      <div class="chat-header-info">
-        <h3><span class="status-dot"></span>AI Assistant</h3>
-        <p id="chat-subtitle">Ask me anything about your tickets, projects, or reports</p>
-      </div>
-      <div class="header-actions">
-        <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙 Dark</button>
-        <div style="font-size:11px;color:var(--text-4)" id="conv-id-display"></div>
-      </div>
+  <!-- Main content -->
+  <div style="flex:1;display:flex;flex-direction:column;min-height:0;min-width:0">
+
+    <!-- Nav tabs -->
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-chat" onclick="switchScreen('chat')">💬 Chat</div>
+      <div class="nav-tab" id="tab-docs" onclick="switchScreen('docs')">📁 Documents</div>
+      <div class="nav-tab admin-tab" id="tab-admin" onclick="switchScreen('admin')" style="display:none">👑 Users</div>
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:var(--text-4);align-self:center;padding-right:12px" id="conv-id-display"></div>
     </div>
 
-    <!-- Welcome / Chat area -->
-    <div id="chat-area" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
-      <div id="welcome" class="welcome-screen">
-        <div style="font-size:48px;margin-bottom:16px">🤖</div>
-        <h2>Hello! How can I help?</h2>
-        <p>I can query your Jira tickets, generate analytics charts, summarise sprint status, and create tickets — all via natural language.</p>
-        <div class="feature-grid">
-          <div class="feature-card" onclick="sendQuick('Show me all open P1 tickets as a bar chart')">
-            <div class="icon">🔴</div>
-            <h4>Critical Tickets</h4>
-            <p>Show me all open P1 tickets</p>
-          </div>
-          <div class="feature-card" onclick="sendQuick('Give me a pie chart of tickets by status')">
-            <div class="icon">📊</div>
-            <h4>Analytics Chart</h4>
-            <p>Pie chart of tickets by status</p>
-          </div>
-          <div class="feature-card" onclick="sendQuick('How many tickets are in progress this week?')">
-            <div class="icon">📋</div>
-            <h4>Sprint Status</h4>
-            <p>How many tickets are in progress?</p>
-          </div>
-          <div class="feature-card" onclick="sendQuick('Show me all done tickets as a bar chart')">
-            <div class="icon">✅</div>
-            <h4>Completed Work</h4>
-            <p>All done tickets with chart</p>
+    <!-- ── CHAT SCREEN ──────────────────────────────────────────────── -->
+    <div class="screen active" id="screen-chat" style="flex-direction:column">
+      <div id="chat-area" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+        <div id="welcome" class="welcome-screen">
+          <div style="font-size:48px;margin-bottom:16px">🤖</div>
+          <h2>Hello! How can I help?</h2>
+          <p>I can query your Jira tickets, generate analytics charts, summarise sprint status, and create tickets — all via natural language.</p>
+          <div class="feature-grid">
+            <div class="feature-card" onclick="sendQuick('Show me all open P1 tickets as a bar chart')">
+              <div class="icon">🔴</div><h4>Critical Tickets</h4><p>Show me all open P1 tickets</p>
+            </div>
+            <div class="feature-card" onclick="sendQuick('Give me a pie chart of tickets by status')">
+              <div class="icon">📊</div><h4>Analytics Chart</h4><p>Pie chart of tickets by status</p>
+            </div>
+            <div class="feature-card" onclick="sendQuick('How many tickets are in progress this week?')">
+              <div class="icon">📋</div><h4>Sprint Status</h4><p>How many tickets are in progress?</p>
+            </div>
+            <div class="feature-card" onclick="sendQuick('Show me all done tickets as a bar chart')">
+              <div class="icon">✅</div><h4>Completed Work</h4><p>All done tickets with chart</p>
+            </div>
           </div>
         </div>
+        <div id="messages" class="chat-messages" style="display:none"></div>
       </div>
-      <div id="messages" class="chat-messages" style="display:none"></div>
+      <div class="chat-input-area">
+        <div class="suggestions" id="suggestions">
+          <span class="suggestion-chip" onclick="sendQuick('Show all open tickets')">🎫 Open tickets</span>
+          <span class="suggestion-chip" onclick="sendQuick('Tickets by priority as bar chart')">📊 Priority chart</span>
+          <span class="suggestion-chip" onclick="sendQuick('Show all done tickets as pie chart')">✅ Done tickets</span>
+          <span class="suggestion-chip" onclick="sendQuick('What tickets are blocked?')">🚫 Blocked</span>
+        </div>
+        <div class="input-row">
+          <textarea id="chat-input" class="chat-textarea" rows="1" placeholder="Ask about tickets, request a chart, or search projects…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="chat-input-area">
-      <div class="suggestions" id="suggestions">
-        <span class="suggestion-chip" onclick="sendQuick('Show all open tickets')">🎫 Open tickets</span>
-        <span class="suggestion-chip" onclick="sendQuick('Tickets by priority as bar chart')">📊 Priority chart</span>
-        <span class="suggestion-chip" onclick="sendQuick('Show all done tickets as pie chart')">✅ Done tickets</span>
-        <span class="suggestion-chip" onclick="sendQuick('What tickets are blocked?')">🚫 Blocked</span>
-      </div>
-      <div class="input-row">
-        <textarea id="chat-input" class="chat-textarea" rows="1" placeholder="Ask about tickets, request a chart, or search projects…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-        <button class="send-btn" id="send-btn" onclick="sendMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
+    <!-- ── DOCS SCREEN ──────────────────────────────────────────────── -->
+    <div class="screen" id="screen-docs" style="flex-direction:column">
+      <div class="docs-screen admin-screen">
+        <div class="docs-header">
+          <div class="admin-title">📁 Document Library</div>
+          <button class="action-btn" onclick="document.getElementById('file-input').click()">+ Upload Document</button>
+          <input type="file" id="file-input" style="display:none" accept=".pdf,.docx,.txt,.md,.csv" onchange="uploadDoc(this)">
+        </div>
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event)">
+          <div class="icon">📂</div>
+          <strong>Drop a file here or click to browse</strong>
+          <p>Supported: PDF, DOCX, TXT, MD, CSV · Max 5 MB</p>
+          <div class="upload-progress" id="upload-progress">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+            <p style="font-size:12px;color:var(--text-3);margin-top:6px">Uploading…</p>
+          </div>
+        </div>
+        <div id="docs-grid" class="docs-grid">
+          <div style="text-align:center;color:var(--text-4);font-size:13px;padding:32px">No documents yet. Upload one above.</div>
+        </div>
       </div>
     </div>
+
+    <!-- ── ADMIN / USERS SCREEN ─────────────────────────────────────── -->
+    <div class="screen" id="screen-admin" style="flex-direction:column">
+      <div class="admin-screen">
+        <div class="admin-header">
+          <div class="admin-title">👑 User Management</div>
+          <button class="action-btn" onclick="loadAdminData()">↻ Refresh</button>
+        </div>
+        <div class="stat-cards" id="stat-cards">
+          <div class="stat-card"><div class="num" id="stat-total">-</div><div class="lbl">Total Users</div></div>
+          <div class="stat-card"><div class="num" id="stat-active">-</div><div class="lbl">Active Users</div></div>
+          <div class="stat-card"><div class="num" id="stat-convs">-</div><div class="lbl">Conversations</div></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Email</th><th>Role</th><th>Status</th><th>Conversations</th><th>Joined</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="user-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-4);padding:24px">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Config ──────────────────────────────────────────────────────────────
-const API = ''; // same-origin: served from FastAPI
-
-// ── State ────────────────────────────────────────────────────────────────
+const API = '';
 let token = localStorage.getItem('itsm_token') || '';
 let userEmail = localStorage.getItem('itsm_email') || '';
+let userRole = '';
 let currentConvId = null;
 let isLoading = false;
 let conversations = [];
@@ -342,11 +440,7 @@ function applyTheme(theme) {
   }
   localStorage.setItem('itsm_theme', theme);
 }
-
-function toggleTheme() {
-  const isLight = document.body.classList.contains('light');
-  applyTheme(isLight ? 'dark' : 'light');
-}
+function toggleTheme() { applyTheme(document.body.classList.contains('light') ? 'dark' : 'light'); }
 
 // ── Boot ─────────────────────────────────────────────────────────────────
 window.onload = () => {
@@ -356,7 +450,7 @@ window.onload = () => {
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
   document.getElementById('login-form').style.display = tab==='login' ? '' : 'none';
   document.getElementById('register-form').style.display = tab==='register' ? '' : 'none';
   document.getElementById('auth-error').style.display = 'none';
@@ -372,26 +466,20 @@ async function doLogin() {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 15000);
     const r = await fetch(`${API}/api/v1/auth/login`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,password:pass}),
-      signal: controller.signal
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass}), signal: controller.signal
     });
     clearTimeout(tid);
-    let d;
-    try { d = await r.json(); } catch(je) { d = {}; }
+    let d; try { d = await r.json(); } catch(e) { d = {}; }
     if (!r.ok) return showAuthError(d.detail || `Login failed (HTTP ${r.status})`);
-    token = d.access_token;
-    userEmail = email;
+    token = d.access_token; userEmail = email;
     localStorage.setItem('itsm_token', token);
     localStorage.setItem('itsm_email', email);
     showApp();
   } catch(e) {
-    if (e.name === 'AbortError') showAuthError('Request timed out — server took too long to respond.');
+    if (e.name==='AbortError') showAuthError('Request timed out — server took too long.');
     else showAuthError('Cannot reach server: ' + e.message);
-  } finally {
-    btn.textContent = 'Sign In →'; btn.disabled = false;
-  }
+  } finally { btn.textContent = 'Sign In →'; btn.disabled = false; }
 }
 
 async function doRegister() {
@@ -415,22 +503,47 @@ function showAuthError(msg) {
 }
 
 function logout() {
-  localStorage.removeItem('itsm_token');
-  localStorage.removeItem('itsm_email');
-  token = ''; userEmail = ''; currentConvId = null; messageHistory = [];
+  localStorage.removeItem('itsm_token'); localStorage.removeItem('itsm_email');
+  token = ''; userEmail = ''; userRole = ''; currentConvId = null; messageHistory = [];
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
 }
 
-// ── App ───────────────────────────────────────────────────────────────────
-function showApp() {
+// ── App boot ──────────────────────────────────────────────────────────────
+async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('user-email-display').textContent = userEmail;
   document.getElementById('user-avatar').textContent = (userEmail[0]||'U').toUpperCase();
+
+  // Fetch current user info to get role
+  try {
+    const r = await authFetch('/api/v1/auth/me');
+    if (r.ok) {
+      const me = await r.json();
+      userRole = me.role || 'viewer';
+      document.getElementById('user-role-display').textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+      // Show admin tab only for superadmin/admin
+      if (userRole === 'superadmin' || userRole === 'admin') {
+        document.getElementById('tab-admin').style.display = '';
+      }
+    }
+  } catch(e) {}
+
   loadConversations();
 }
 
+// ── Screen navigation ─────────────────────────────────────────────────────
+function switchScreen(name) {
+  ['chat','docs','admin'].forEach(s => {
+    document.getElementById('screen-' + s).classList.toggle('active', s === name);
+    document.getElementById('tab-' + s).classList.toggle('active', s === name);
+  });
+  if (name === 'docs') loadDocs();
+  if (name === 'admin') loadAdminData();
+}
+
+// ── Conversations ─────────────────────────────────────────────────────────
 async function loadConversations() {
   try {
     const r = await authFetch('/api/v1/conversations');
@@ -444,8 +557,7 @@ function renderConvList() {
   const clearBtn = document.getElementById('clear-all-btn');
   if (!conversations.length) {
     el.innerHTML = '<div style="padding:16px;font-size:11px;color:var(--text-4);text-align:center">No conversations yet</div>';
-    clearBtn.style.display = 'none';
-    return;
+    clearBtn.style.display = 'none'; return;
   }
   clearBtn.style.display = '';
   el.innerHTML = conversations.slice().reverse().map(c=>`
@@ -459,77 +571,55 @@ function renderConvList() {
 }
 
 function newChat() {
-  currentConvId = null;
-  messageHistory = [];
+  currentConvId = null; messageHistory = [];
   document.getElementById('messages').innerHTML = '';
   document.getElementById('messages').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
   document.getElementById('conv-id-display').textContent = '';
-  document.getElementById('chat-subtitle').textContent = 'Ask me anything about your tickets, projects, or reports';
+  document.getElementById('suggestions').style.display = '';
   renderConvList();
+  switchScreen('chat');
 }
 
 async function loadConv(id) {
-  currentConvId = id;
-  renderConvList();
+  currentConvId = id; renderConvList();
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('messages').style.display = 'flex';
   document.getElementById('conv-id-display').textContent = `Conv: ${id.slice(-6)}`;
+  switchScreen('chat');
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────
-function handleKey(e) {
-  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-function sendQuick(text) {
-  document.getElementById('chat-input').value = text;
-  sendMessage();
-}
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function sendQuick(text) { document.getElementById('chat-input').value=text; sendMessage(); }
 
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text || isLoading) return;
-
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('messages').style.display = 'flex';
   document.getElementById('suggestions').style.display = 'none';
-
   input.value = ''; input.style.height = 'auto';
   isLoading = true;
   document.getElementById('send-btn').disabled = true;
-
   appendMessage('user', text);
   messageHistory.push({role:'user', content:text});
-
   const typingId = 'typing-' + Date.now();
-  appendTyping(typingId);
-  scrollBottom();
-
+  appendTyping(typingId); scrollBottom();
   try {
-    const r = await authFetch('/api/v1/chat', {
-      method: 'POST',
-      body: JSON.stringify({message: text, conversation_id: currentConvId})
-    });
-    if (r.status === 401) { logout(); return; }
+    const r = await authFetch('/api/v1/chat', {method:'POST', body:JSON.stringify({message:text, conversation_id:currentConvId})});
+    if (r.status===401) { logout(); return; }
     const d = await r.json();
     removeTyping(typingId);
-
     if (d.conversation_id) {
       currentConvId = d.conversation_id;
       document.getElementById('conv-id-display').textContent = `Conv: ${d.conversation_id.slice(-6)}`;
     }
     const responseText = d.response || d.detail || 'No response';
-    appendMessage('assistant', responseText
-, d.chart);
+    appendMessage('assistant', responseText, d.chart);
     messageHistory.push({role:'assistant', content:responseText});
-    if (d.conversation_id && !currentConvId) {
-      currentConvId = d.conversation_id;
-    }
     await loadConversations();
   } catch(e) {
     removeTyping(typingId);
@@ -541,9 +631,146 @@ async function sendMessage() {
   }
 }
 
+// ── Docs screen ───────────────────────────────────────────────────────────
+async function loadDocs() {
+  try {
+    const r = await authFetch('/api/v1/docs/');
+    const docs = await r.json();
+    renderDocs(docs);
+  } catch(e) { showToast('Failed to load documents'); }
+}
+
+function renderDocs(docs) {
+  const grid = document.getElementById('docs-grid');
+  if (!docs.length) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--text-4);font-size:13px;padding:32px">No documents yet. Upload one above.</div>';
+    return;
+  }
+  const icons = {'application/pdf':'📄','application/vnd.openxmlformats-officedocument.wordprocessingml.document':'📝','text/plain':'📃','text/markdown':'📋','text/csv':'📊'};
+  grid.innerHTML = docs.map(d => `
+    <div class="doc-card">
+      <div class="doc-icon">${icons[d.content_type]||'📄'}</div>
+      <div class="doc-info">
+        <div class="doc-name">${d.filename}</div>
+        <div class="doc-meta">${(d.size_bytes/1024).toFixed(1)} KB · ${d.created_at}</div>
+        <div class="doc-preview">${d.preview||'(no preview)'}</div>
+      </div>
+      <button class="action-btn danger" onclick="deleteDoc('${d.id}','${d.filename}')">🗑 Delete</button>
+    </div>`).join('');
+}
+
+async function uploadDoc(input) {
+  const file = input.files[0]; if (!file) return;
+  const progress = document.getElementById('upload-progress');
+  const fill = document.getElementById('progress-fill');
+  progress.style.display = '';
+  let pct = 0;
+  const ticker = setInterval(()=>{ pct = Math.min(pct+15, 85); fill.style.width = pct+'%'; }, 200);
+  try {
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(`${API}/api/v1/docs/upload`, {
+      method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: fd
+    });
+    clearInterval(ticker); fill.style.width='100%';
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||'Upload failed'); }
+    showToast(`✅ "${file.name}" uploaded`);
+    await loadDocs();
+  } catch(e) { showToast('Upload failed: ' + e.message); }
+  finally { setTimeout(()=>{ progress.style.display='none'; fill.style.width='0%'; }, 600); input.value=''; }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0]; if (!file) return;
+  const fakeInput = {files:[file]};
+  uploadDoc(fakeInput);
+}
+
+async function deleteDoc(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    await authFetch(`/api/v1/docs/${id}`, {method:'DELETE'});
+    showToast('Document deleted');
+    await loadDocs();
+  } catch(e) { showToast('Delete failed'); }
+}
+
+// ── Admin / Users screen ──────────────────────────────────────────────────
+async function loadAdminData() {
+  try {
+    const [statsR, usersR] = await Promise.all([
+      authFetch('/api/v1/admin/stats'),
+      authFetch('/api/v1/admin/users'),
+    ]);
+    const stats = await statsR.json();
+    const users = await usersR.json();
+    document.getElementById('stat-total').textContent = stats.total_users;
+    document.getElementById('stat-active').textContent = stats.active_users;
+    document.getElementById('stat-convs').textContent = stats.total_conversations;
+    renderUserTable(users);
+  } catch(e) { showToast('Failed to load admin data'); }
+}
+
+function renderUserTable(users) {
+  const tbody = document.getElementById('user-tbody');
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-4);padding:24px">No users found</td></tr>';
+    return;
+  }
+  const roles = ['superadmin','admin','agent','viewer'];
+  const isSelf = (u) => u.email === userEmail;
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td><strong>${u.email}</strong>${isSelf(u)?' <span style="font-size:11px;color:var(--accent)">(you)</span>':''}</td>
+      <td>
+        ${isSelf(u)
+          ? `<span class="role-badge role-${u.role}">${u.role}</span>`
+          : `<select class="role-select" onchange="changeRole('${u.id}',this.value)" ${u.role==='superadmin'&&!isSelf(u)?'disabled':''}>
+              ${roles.map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${r}</option>`).join('')}
+             </select>`}
+      </td>
+      <td><span class="status-dot ${u.is_active?'status-active':'status-inactive'}"></span>${u.is_active?'Active':'Inactive'}</td>
+      <td>${u.conversation_count}</td>
+      <td>${u.created_at}</td>
+      <td style="white-space:nowrap">
+        ${!isSelf(u) ? `
+          <button class="action-btn" onclick="toggleUserStatus('${u.id}',${!u.is_active})">${u.is_active?'Deactivate':'Activate'}</button>
+          <button class="action-btn danger" onclick="deleteUserAdmin('${u.id}','${u.email}')">Delete</button>
+        ` : '<span style="color:var(--text-4);font-size:12px">—</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+async function changeRole(userId, role) {
+  try {
+    const r = await authFetch(`/api/v1/admin/users/${userId}/role`, {method:'PATCH', body:JSON.stringify({role})});
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail); }
+    showToast('Role updated');
+  } catch(e) { showToast('Error: '+e.message); loadAdminData(); }
+}
+
+async function toggleUserStatus(userId, activate) {
+  try {
+    await authFetch(`/api/v1/admin/users/${userId}/status`, {method:'PATCH', body:JSON.stringify({is_active:activate})});
+    showToast(activate ? 'User activated' : 'User deactivated');
+    loadAdminData();
+  } catch(e) { showToast('Failed to update status'); }
+}
+
+async function deleteUserAdmin(userId, email) {
+  if (!confirm(`Permanently delete user "${email}" and all their conversations?`)) return;
+  try {
+    const r = await authFetch(`/api/v1/admin/users/${userId}`, {method:'DELETE'});
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail); }
+    showToast('User deleted');
+    loadAdminData();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
 // ── Auth fetch helper ─────────────────────────────────────────────────────
 async function authFetch(url, opts={}) {
-  const headers = Object.assign({'Content-Type':'application/json', 'Authorization': `Bearer ${token}`}, opts.headers||{});
+  const headers = Object.assign({'Content-Type':'application/json','Authorization':`Bearer ${token}`}, opts.headers||{});
   return fetch(`${API}${url}`, Object.assign({}, opts, {headers}));
 }
 
@@ -552,19 +779,16 @@ function appendMessage(role, text, chartData) {
   const messages = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = `message ${role}`;
-
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   bubble.innerHTML = formatMarkdown(text || '');
   div.appendChild(bubble);
-
   if (chartData) {
     const chartDiv = document.createElement('div');
     chartDiv.className = 'chart-container';
     chartDiv.innerHTML = renderChart(chartData);
     div.appendChild(chartDiv);
   }
-
   messages.appendChild(div);
   scrollBottom();
 }
@@ -572,23 +796,13 @@ function appendMessage(role, text, chartData) {
 function appendTyping(id) {
   const messages = document.getElementById('messages');
   const div = document.createElement('div');
-  div.className = 'message assistant';
-  div.id = id;
+  div.className = 'message assistant'; div.id = id;
   div.innerHTML = '<div class="bubble typing-indicator"><span></span><span></span><span></span></div>';
   messages.appendChild(div);
 }
+function removeTyping(id) { const el=document.getElementById(id); if(el) el.remove(); }
+function scrollBottom() { const m=document.getElementById('messages'); m.scrollTop=m.scrollHeight; }
 
-function removeTyping(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
-
-function scrollBottom() {
-  const messages = document.getElementById('messages');
-  messages.scrollTop = messages.scrollHeight;
-}
-
-// ── Markdown formatter ────────────────────────────────────────────────────
 function formatMarkdown(text) {
   return text
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -599,69 +813,55 @@ function formatMarkdown(text) {
     .replace(/^#{2}\s+(.+)$/gm,'<h2>$1</h2>')
     .replace(/^#{1}\s+(.+)$/gm,'<h1>$1</h1>')
     .replace(/^[-*]\s+(.+)$/gm,'<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
     .replace(/\n\n/g,'</p><p>')
     .replace(/\n/g,'<br>');
 }
 
 // ── Chart renderer ────────────────────────────────────────────────────────
 function renderChart(data) {
-  if (!data || !data.labels || !data.values) return '';
-  const {type, title, labels, values} = data;
+  if (!data||!data.labels||!data.values) return '';
+  const {type,title,labels,values} = data;
   const max = Math.max(...values, 1);
 
-  if (type === 'bar') {
-    const barW = Math.max(30, Math.floor(320 / labels.length) - 8);
-    const bars = labels.map((lbl,i) => {
-      const h = Math.round((values[i]/max)*100);
-      const colors = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'];
-      const color = colors[i % colors.length];
-      return `<g>
-        <rect x="${i*(barW+8)}" y="${110-h}" width="${barW}" height="${h}" rx="3" fill="${color}"/>
+  if (type==='bar') {
+    const barW = Math.max(30, Math.floor(320/labels.length)-8);
+    const bars = labels.map((lbl,i)=>{
+      const h=Math.round((values[i]/max)*100);
+      const colors=['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'];
+      return `<g><rect x="${i*(barW+8)}" y="${110-h}" width="${barW}" height="${h}" rx="3" fill="${colors[i%colors.length]}"/>
         <text x="${i*(barW+8)+barW/2}" y="125" text-anchor="middle" font-size="10" fill="var(--text-3)">${lbl}</text>
-        <text x="${i*(barW+8)+barW/2}" y="${105-h}" text-anchor="middle" font-size="10" fill="var(--text-2)">${values[i]}</text>
-      </g>`;
+        <text x="${i*(barW+8)+barW/2}" y="${105-h}" text-anchor="middle" font-size="10" fill="var(--text-2)">${values[i]}</text></g>`;
     }).join('');
-    const svgW = labels.length * (barW+8) + 20;
+    const svgW=labels.length*(barW+8)+20;
     return `<div class="chart-wrap"><div class="chart-title">${title}</div>
       <svg viewBox="0 0 ${svgW} 140" width="100%" style="overflow:visible">${bars}
-        <line x1="0" y1="110" x2="${svgW}" y2="110" stroke="var(--border)" stroke-width="1"/>
-      </svg></div>`;
+      <line x1="0" y1="110" x2="${svgW}" y2="110" stroke="var(--border)" stroke-width="1"/></svg></div>`;
   }
 
-  if (type === 'pie') {
-    const total = values.reduce((a,b)=>a+b,0);
-    const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6'];
-    let angle = -Math.PI/2;
-    const slices = values.map((v,i) => {
-      const a = (v/total)*Math.PI*2;
-      const x1=50+40*Math.cos(angle), y1=50+40*Math.sin(angle);
-      angle+=a;
-      const x2=50+40*Math.cos(angle), y2=50+40*Math.sin(angle);
-      const large=a>Math.PI?1:0;
-      return `<path d="M50,50 L${x1.toFixed(1)},${y1.toFixed(1)} A40,40 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${colors[i%colors.length]}"/>`;
+  if (type==='pie') {
+    const total=values.reduce((a,b)=>a+b,0);
+    const colors=['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6'];
+    let angle=-Math.PI/2;
+    const slices=values.map((v,i)=>{
+      const a=(v/total)*Math.PI*2;
+      const x1=50+40*Math.cos(angle),y1=50+40*Math.sin(angle); angle+=a;
+      const x2=50+40*Math.cos(angle),y2=50+40*Math.sin(angle);
+      return `<path d="M50,50 L${x1.toFixed(1)},${y1.toFixed(1)} A40,40 0 ${a>Math.PI?1:0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${colors[i%colors.length]}"/>`;
     }).join('');
-    const legend = labels.map((lbl,i)=>
-      `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)"><span style="width:10px;height:10px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></span>${lbl} (${values[i]})</div>`
-    ).join('');
+    const legend=labels.map((lbl,i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)"><span style="width:10px;height:10px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></span>${lbl} (${values[i]})</div>`).join('');
     return `<div class="chart-wrap"><div class="chart-title">${title}</div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <svg viewBox="0 0 100 100" width="110" height="110">${slices}</svg>
-        <div style="display:flex;flex-direction:column;gap:4px">${legend}</div>
-      </div></div>`;
+      <svg viewBox="0 0 100 100" width="110" height="110">${slices}</svg>
+      <div style="display:flex;flex-direction:column;gap:4px">${legend}</div></div></div>`;
   }
 
-  // line chart
-  const pts = values.map((v,i) => `${(i/(labels.length-1||1))*280},${100-(v/max)*80}`).join(' ');
-  const xLabels = labels.map((lbl,i) =>
-    `<text x="${(i/(labels.length-1||1))*280}" y="118" text-anchor="middle" font-size="9" fill="var(--text-3)">${lbl.slice(0,8)}</text>`
-  ).join('');
+  const pts=values.map((v,i)=>`${(i/(labels.length-1||1))*280},${100-(v/max)*80}`).join(' ');
   return `<div class="chart-wrap"><div class="chart-title">${title}</div>
     <svg viewBox="0 0 300 130" width="100%" style="overflow:visible">
-      <polyline points="${pts}" fill="none" stroke="#6366f1" stroke-width="2"/>
-      ${values.map((v,i)=>`<circle cx="${(i/(labels.length-1||1))*280}" cy="${100-(v/max)*80}" r="3" fill="#6366f1"/>`).join('')}
-      ${xLabels}
-      <line x1="0" y1="100" x2="280" y2="100" stroke="var(--border)" stroke-width="1"/>
+    <polyline points="${pts}" fill="none" stroke="#6366f1" stroke-width="2"/>
+    ${values.map((v,i)=>`<circle cx="${(i/(labels.length-1||1))*280}" cy="${100-(v/max)*80}" r="3" fill="#6366f1"/>`).join('')}
+    ${labels.map((lbl,i)=>`<text x="${(i/(labels.length-1||1))*280}" y="118" text-anchor="middle" font-size="9" fill="var(--text-3)">${lbl.slice(0,8)}</text>`).join('')}
+    <line x1="0" y1="100" x2="280" y2="100" stroke="var(--border)" stroke-width="1"/>
     </svg></div>`;
 }
 
@@ -670,7 +870,7 @@ async function deleteConversation(e, id) {
   e.stopPropagation();
   try {
     await authFetch(`/api/v1/conversations/${id}`, {method:'DELETE'});
-    if (currentConvId === id) newChat();
+    if (currentConvId===id) newChat();
     await loadConversations();
   } catch(err) { showToast('Delete failed'); }
 }
@@ -679,19 +879,17 @@ async function deleteAllConversations() {
   if (!confirm('Delete all conversations?')) return;
   try {
     await authFetch('/api/v1/conversations', {method:'DELETE'});
-    newChat();
-    await loadConversations();
+    newChat(); await loadConversations();
     showToast('All conversations deleted');
   } catch(err) { showToast('Delete failed'); }
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
-
 </script>
 </body>
 </html>

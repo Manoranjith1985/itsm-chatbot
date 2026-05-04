@@ -3,9 +3,12 @@ from beanie import init_beanie
 import structlog
 
 from app.core.config import settings
-from app.db.models import User, Conversation, FeatureFlag, AuditLog
+from app.db.models import User, Conversation, FeatureFlag, AuditLog, Doc, UserRole
+from app.core.security import hash_password
 
 logger = structlog.get_logger()
+
+SUPERADMIN_EMAIL = "manoumaranjith@gmail.com"
 
 
 async def init_db():
@@ -16,7 +19,6 @@ async def init_db():
         connectTimeoutMS=10000,
         socketTimeoutMS=10000,
     )
-    # Verify connection before proceeding
     try:
         await client.admin.command("ping")
         logger.info("MongoDB connection successful")
@@ -26,9 +28,19 @@ async def init_db():
 
     await init_beanie(
         database=client.get_default_database(),
-        document_models=[User, Conversation, FeatureFlag, AuditLog],
+        document_models=[User, Conversation, FeatureFlag, AuditLog, Doc],
     )
     logger.info("Beanie ODM initialised")
+
+    # Ensure superadmin role is set for the designated account
+    superadmin = await User.find_one(User.email == SUPERADMIN_EMAIL)
+    if superadmin:
+        if superadmin.role != UserRole.superadmin:
+            superadmin.role = UserRole.superadmin
+            await superadmin.save()
+            logger.info("Elevated existing account to superadmin", email=SUPERADMIN_EMAIL)
+    else:
+        logger.info("Superadmin account not yet registered", email=SUPERADMIN_EMAIL)
 
     # Seed default feature flags
     if not await FeatureFlag.find_one(FeatureFlag.name == "ai_write_operations"):

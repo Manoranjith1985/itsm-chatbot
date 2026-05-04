@@ -46,3 +46,18 @@ async def login(body: LoginRequest):
         access_token=create_access_token(user.email),
         refresh_token=create_refresh_token(user.email),
     )
+
+
+from fastapi import Depends
+from app.api.deps import get_current_user
+
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "role": current_user.role.value,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at.strftime("%Y-%m-%d %H:%M"),
+    }
