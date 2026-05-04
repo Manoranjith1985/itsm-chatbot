@@ -546,6 +546,33 @@ body.light .toast{background:rgba(255,255,255,0.95);color:#0f172a}
 
 /* ── Misc ──────────────────────────────────────────────────────────────── */
 .divider{height:1px;background:var(--border);margin:4px 0}
+
+/* ── Voice / Mic button ─────────────────────────────────────────────────── */
+.mic-btn{
+  width:46px;height:46px;border-radius:12px;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  color:var(--text2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:.2s;flex-shrink:0;
+}
+.mic-btn:hover{background:var(--glass-hover);color:var(--text1);border-color:rgba(99,102,241,0.4)}
+.mic-btn.recording{
+  background:rgba(239,68,68,0.15);
+  border-color:rgba(239,68,68,0.5);
+  color:#f87171;
+  animation:mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}
+  50%{box-shadow:0 0 0 9px rgba(239,68,68,0)}
+}
+.voice-status{
+  font-size:12px;color:var(--text3);
+  padding:4px 2px 0;min-height:18px;transition:.2s;
+}
+.voice-status.active{color:#f87171;font-weight:500}
+
 </style>
 </head>
 <body>
@@ -725,14 +752,23 @@ body.light .toast{background:rgba(255,255,255,0.95);color:#0f172a}
         </div>
         <div class="input-row">
           <textarea id="chat-input" class="chat-textarea" rows="1"
-            placeholder="Ask about tickets, request a chart, or search projects…"
+            placeholder="Ask about tickets, or speak using the mic…"
             onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Voice input (Chrome/Edge)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M5 10a7 7 0 0 0 14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          </button>
           <button class="send-btn" id="send-btn" onclick="sendMessage()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
           </button>
         </div>
+        <div class="voice-status" id="voice-status"></div>
       </div>
     </div>
 
@@ -1168,6 +1204,82 @@ function showToast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ── Voice / Speech Recognition ────────────────────────────────────────────
+let recognition = null;
+let isRecording = false;
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.continuous = false;
+  r.interimResults = true;
+  r.lang = 'en-US';
+
+  r.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    setVoiceStatus('🎙 Listening… speak now', true);
+  };
+
+  r.onresult = (e) => {
+    const transcript = Array.from(e.results)
+      .map(res => res[0].transcript).join('');
+    const input = document.getElementById('chat-input');
+    input.value = transcript;
+    autoResize(input);
+    if (e.results[e.results.length - 1].isFinal) {
+      setVoiceStatus('✅ Got it! Press Send or speak again.', false);
+    } else {
+      setVoiceStatus('🎙 "' + transcript.slice(0, 50) + (transcript.length > 50 ? '…' : '') + '"', true);
+    }
+  };
+
+  r.onerror = (e) => {
+    const msgs = {
+      'not-allowed': '🔒 Microphone blocked. Click the lock icon in your browser address bar to allow access.',
+      'no-speech':   '🤫 No speech detected — try again.',
+      'network':     '🌐 Network error during recognition.',
+    };
+    setVoiceStatus(msgs[e.error] || '⚠️ Error: ' + e.error, false);
+    stopRecording();
+  };
+
+  r.onend = () => { stopRecording(); };
+  return r;
+}
+
+function toggleVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setVoiceStatus('⚠️ Voice not supported here. Please use Chrome or Edge.', false);
+    setTimeout(() => setVoiceStatus('', false), 4000);
+    return;
+  }
+  if (isRecording) {
+    if (recognition) recognition.stop();
+    stopRecording();
+    return;
+  }
+  recognition = initSpeechRecognition();
+  if (recognition) recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  const btn = document.getElementById('mic-btn');
+  if (btn) btn.classList.remove('recording');
+  setTimeout(() => setVoiceStatus('', false), 3500);
+}
+
+function setVoiceStatus(msg, active) {
+  const el = document.getElementById('voice-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('active', active);
+}
+
 </script>
 </body>
 </html>
