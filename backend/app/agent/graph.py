@@ -1,12 +1,12 @@
 import json
-import re
+from collections import Counter
 from typing import Any, Dict, List, Optional
 from litellm import acompletion
 
 from app.core.config import settings
 from app.db.models import User
 from app.connectors.jira import JiraConnector
-from app.connectors.base import TicketFilter
+from app.connectors.base import TicketFilter, CreateTicketRequest
 from app.core.security import decrypt_secret
 
 SYSTEM_PROMPT = """You are an ITSM-PMO AI assistant. You help IT teams query tickets, create reports, and manage work items.
@@ -25,7 +25,6 @@ chart_type can be: "bar", "line", "pie", or omit it for a plain list.
 filters can include: status, priority, assignee, query, limit (default 20).
 
 When the user asks for a chart or analytics, always include chart_type.
-
 When the user asks about "completed", "done", "finished", "resolved", or "closed" tickets, always use status "done".
 When the user asks about "open", "new", or "to do" tickets, always use status "open".
 
@@ -39,28 +38,26 @@ Keep responses concise and professional."""
 def _get_connector(user: User) -> Optional[JiraConnector]:
     for cfg in user.itsm_configs:
         if cfg.is_active and cfg.connector_type == "jira":
-            token = decrypt_secret(cfg.encrypted_token)
-            return JiraConnector(site_url=cfg.site_url, email=cfg.email, api_token=token)
+            try:
+                token = decrypt_secret(cfg.encrypted_token)
+                return JiraConnector(site_url=cfg.site_url, email=cfg.email, api_token=token)
+            except Exception:
+                continue
     return None
 
 
 def _extract_tool_call(content: str) -> Optional[dict]:
     """Robustly parse a JSON tool call from LLM output."""
     content = content.strip()
-
-    # Try 1: entire response is JSON
     try:
         if content.startswith('{'):
             return json.loads(content)
     except Exception:
         pass
-
-    # Try 2: find balanced JSON object containing "tool"
     try:
         idx = content.find('"tool"')
         if idx == -1:
             return None
-        # Walk backwards to find opening brace
         start = content.rfind('{', 0, idx)
         if start == -1:
             return None
@@ -74,7 +71,6 @@ def _extract_tool_call(content: str) -> Optional[dict]:
                     return json.loads(content[start:start + i + 1])
     except Exception:
         pass
-
     return None
 
 
@@ -96,15 +92,13 @@ async def run_agent(message: str, history: List[Dict], user: User) -> Dict[str, 
     except Exception as e:
         return {"text": f"⚠️ AI service error: {str(e)}", "chart": None}
 
-    # Try to extract tool call
     tool_call = _extract_tool_call(content)
-
     if not tool_call or "tool" not in tool_call:
         return {"text": content, "chart": None}
 
     tool = tool_call.get("tool")
 
-    # ── get_tickets ─────────────────────────────────────────────────
+    # ── get_tickets ──────────────────────────────────────────────────
     if tool == "get_tickets":
         connector = _get_connector(user)
         if not connector:
@@ -117,16 +111,13 @@ async def run_agent(message: str, history: List[Dict], user: User) -> Dict[str, 
                     "3. Call **POST /api/v1/settings/itsm-connections** with your Jira site URL, email, and API token\n\n"
                     "Once connected, I can query your tickets and generate charts!"
                 ),
-                "chart": None
+                "chart": None,
             }
-
         try:
             raw_filters = tool_call.get("filters", {})
-            # Sanitise filters — remove None/empty values
             clean = {k: v for k, v in raw_filters.items() if v not in (None, "", [])}
             filters = TicketFilter(**clean)
             tickets = await connector.get_tickets(filters)
-            chart_type = tool_call.get("chart_type")
 
             if not tickets:
                 return {"text": "No tickets found matching your criteria. Try adjusting the filters.", "chart": None}
@@ -137,27 +128,24 @@ async def run_agent(message: str, history: List[Dict], user: User) -> Dict[str, 
                 for t in tickets[:25]
             ])
             text = f"Found **{len(tickets)}** ticket(s):\n\n{ticket_lines}"
-
-            # Always render a chart — default to "bar" (priority breakdown) when not specified
-            effective_chart_type = chart_type or "bar"
+            effective_chart_type = tool_call.get("chart_type") or "bar"
             chart = _build_chart(tickets, effective_chart_type)
             return {"text": text, "chart": chart}
 
         except Exception as e:
             return {"text": f"⚠️ Error fetching tickets: {str(e)}", "chart": None}
 
-    # ── create_ticket ────────────────────────────────────────────────
+    # ── create_ticket ─────────────────────────────────────────────────
     if tool == "create_ticket":
         if not settings.AI_WRITE_OPERATIONS:
             return {
                 "text": "⚠️ **Ticket creation is disabled.**\n\nAsk your admin to enable `AI_WRITE_OPERATIONS` in the Render environment settings.",
-                "chart": None
+                "chart": None,
             }
         connector = _get_connector(user)
         if not connector:
             return {"text": "⚠️ No ITSM connector configured. Add Jira credentials first.", "chart": None}
         try:
-            from app.connectors.base import CreateTicketRequest
             req = CreateTicketRequest(
                 title=tool_call.get("title", "New Ticket"),
                 description=tool_call.get("description", ""),
@@ -169,13 +157,11 @@ async def run_agent(message: str, history: List[Dict], user: User) -> Dict[str, 
         except Exception as e:
             return {"text": f"⚠️ Error creating ticket: {str(e)}", "chart": None}
 
-    # Fallback — return plain content
     return {"text": content, "chart": None}
 
 
 def _build_chart(tickets, chart_type: str) -> dict:
-    from collections import Counter
-
+    """Build chart data dict from a list of tickets."""
     if chart_type == "pie":
         counts = Counter(t.status for t in tickets)
         return {
@@ -202,4 +188,3 @@ def _build_chart(tickets, chart_type: str) -> dict:
             "labels": list(counts.keys()),
             "values": list(counts.values()),
         }
-    

@@ -1016,8 +1016,19 @@ function switchScreen(name) {
 }
 
 // ── Conversations ─────────────────────────────────────────────────────────
+let _convLoadSeq = 0;
 async function loadConversations() {
-  try { const r=await authFetch('/api/v1/conversations'); conversations=await r.json(); renderConvList(); } catch(e){}
+  const seq = ++_convLoadSeq;
+  try {
+    const r = await authFetch('/api/v1/conversations');
+    if (!r.ok) return;
+    const data = await r.json();
+    if (seq !== _convLoadSeq) return; // discard stale response
+    conversations = data;
+    renderConvList();
+  } catch(e) {
+    // silent — user is notified elsewhere on auth failures
+  }
 }
 function renderConvList() {
   const el=document.getElementById('conv-list');
@@ -1105,24 +1116,61 @@ function renderDocs(docs) {
     </div>`).join('');
 }
 async function uploadDoc(input) {
-  const file=input.files[0]; if(!file) return;
-  const progress=document.getElementById('upload-progress');
-  const fill=document.getElementById('progress-fill');
-  progress.style.display=''; let pct=0;
-  const ticker=setInterval(()=>{pct=Math.min(pct+12,85);fill.style.width=pct+'%';},200);
+  const file = input.files[0]; if (!file) return;
+
+  // ── Client-side validation ──────────────────────────────────────
+  const ALLOWED = {
+    'application/pdf': true,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+    'text/plain': true, 'text/markdown': true, 'text/csv': true,
+  };
+  const EXT_MAP = {pdf:'application/pdf', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt:'text/plain', md:'text/markdown', csv:'text/csv'};
+  const ext = file.name.split('.').pop().toLowerCase();
+  const mimeOk = ALLOWED[file.type] || ALLOWED[EXT_MAP[ext]];
+  if (!mimeOk) {
+    showToast(`⚠️ "${file.name}" is not supported. Use PDF, DOCX, TXT, MD or CSV.`);
+    input.value = ''; return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast(`⚠️ File too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 5 MB.`);
+    input.value = ''; return;
+  }
+
+  const progress = document.getElementById('upload-progress');
+  const fill = document.getElementById('progress-fill');
+  progress.style.display = ''; let pct = 0;
+  const ticker = setInterval(() => { pct = Math.min(pct + 12, 85); fill.style.width = pct + '%'; }, 200);
+  let success = false;
   try {
-    const fd=new FormData(); fd.append('file',file);
-    const r=await fetch(`${API}/api/v1/docs/upload`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});
-    clearInterval(ticker); fill.style.width='100%';
-    if(!r.ok){const e=await r.json();throw new Error(e.detail||'Upload failed');}
-    showToast(`✅ "${file.name}" uploaded`); await loadDocs();
-  } catch(e){showToast('Upload failed: '+e.message);}
-  finally{setTimeout(()=>{progress.style.display='none';fill.style.width='0%';},600);input.value='';}
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(`${API}/api/v1/docs/upload`, {
+      method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd
+    });
+    clearInterval(ticker); fill.style.width = '100%';
+    if (!r.ok) {
+      let msg = 'Upload failed';
+      try { const e = await r.json(); msg = e.detail || msg; } catch(_){}
+      throw new Error(`${msg} (HTTP ${r.status})`);
+    }
+    success = true;
+    showToast(`✅ "${file.name}" uploaded successfully`);
+    await loadDocs();
+  } catch(e) {
+    clearInterval(ticker);
+    showToast('❌ ' + e.message);
+    fill.style.width = '0%';
+  } finally {
+    setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, success ? 600 : 100);
+    input.value = '';
+  }
 }
 function handleDrop(e){
-  e.preventDefault();document.getElementById('upload-zone').classList.remove('drag-over');
-  const file=e.dataTransfer.files[0]; if(!file) return;
-  uploadDoc({files:[file]});
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0]; if (!file) return;
+  // Reuse the same validated upload function
+  const fakeInput = { files: [file], value: '' };
+  uploadDoc(fakeInput);
 }
 async function deleteDoc(id,name){
   if(!confirm(`Delete "${name}"?`)) return;

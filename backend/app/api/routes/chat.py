@@ -15,12 +15,24 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = None
 
 
+def _parse_object_id(oid: str):
+    """Parse a MongoDB ObjectId string, raising 422 on invalid format."""
+    try:
+        from beanie import PydanticObjectId
+        return PydanticObjectId(oid)
+    except Exception:
+        raise HTTPException(status_code=422, detail=f"Invalid ID format: {oid}")
+
+
 @router.post("/chat")
 async def chat(body: ChatRequest, current_user: User = Depends(get_current_user)):
     conv = None
     if body.conversation_id:
-        from beanie import PydanticObjectId
-        conv = await Conversation.get(PydanticObjectId(body.conversation_id))
+        try:
+            conv = await Conversation.get(_parse_object_id(body.conversation_id))
+        except HTTPException:
+            conv = None  # treat bad ID as new conversation
+
     if not conv:
         conv = Conversation(user_id=str(current_user.id), platform=Platform.web)
         await conv.insert()
@@ -37,36 +49,47 @@ async def chat(body: ChatRequest, current_user: User = Depends(get_current_user)
 
 @router.websocket("/ws/{conversation_id}")
 async def websocket_chat(websocket: WebSocket, conversation_id: str):
+    # Validate token BEFORE accepting the connection
+    token = websocket.query_params.get("token", "")
+    if token:
+        from app.core.security import decode_token
+        payload = decode_token(token)
+        if not payload:
+            await websocket.close(code=4001)
+            return
+    # If no query param token, we'll validate from first message
     await websocket.accept()
     try:
         while True:
             data = await websocket.receive_json()
-            token = data.get("token", "")
+
+            # Support token in both query params and message body
+            msg_token = data.get("token", token)
             from app.core.security import decode_token
-            payload = decode_token(token)
+            payload = decode_token(msg_token)
             if not payload:
                 await websocket.send_json({"type": "error", "message": "Unauthorized"})
-                await websocket.close()
+                await websocket.close(code=4001)
                 return
 
-            user = await User.find_one(User.email == payload["sub"])
+            user = await User.find_one(User.email == payload.get("sub", ""))
             if not user:
-                await websocket.close()
+                await websocket.close(code=4001)
                 return
 
             message = data.get("message", "")
             history = data.get("history", [])
 
             await websocket.send_json({"type": "stream_start"})
-
             result = await run_agent(message, history, user)
-
             await websocket.send_json({"type": "stream_chunk", "content": result["text"]})
             if result.get("chart"):
                 await websocket.send_json({"type": "chart", "data": result["chart"]})
             await websocket.send_json({"type": "stream_end"})
 
     except WebSocketDisconnect:
+        pass
+    except Exception:
         pass
 
 
@@ -78,8 +101,7 @@ async def list_conversations(current_user: User = Depends(get_current_user)):
 
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
-    from beanie import PydanticObjectId
-    conv = await Conversation.get(PydanticObjectId(conversation_id))
+    conv = await Conversation.get(_parse_object_id(conversation_id))
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     if conv.user_id != str(current_user.id):
@@ -91,7 +113,6 @@ async def delete_conversation(conversation_id: str, current_user: User = Depends
 @router.delete("/conversations")
 async def delete_all_conversations(current_user: User = Depends(get_current_user)):
     convs = await Conversation.find(Conversation.user_id == str(current_user.id)).to_list()
-    count = len(convs)
     for c in convs:
         await c.delete()
-    return {"deleted": count}
+    return {"deleted": len(convs)}
