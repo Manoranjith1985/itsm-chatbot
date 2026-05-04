@@ -525,3 +525,173 @@ async function sendMessage() {
     }
     const responseText = d.response || d.detail || 'No response';
     appendMessage('assistant', responseText
+, d.chart);
+    messageHistory.push({role:'assistant', content:responseText});
+    if (d.conversation_id && !currentConvId) {
+      currentConvId = d.conversation_id;
+    }
+    await loadConversations();
+  } catch(e) {
+    removeTyping(typingId);
+    appendMessage('assistant', '⚠️ Error: ' + e.message);
+  } finally {
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    scrollBottom();
+  }
+}
+
+// ── Auth fetch helper ─────────────────────────────────────────────────────
+async function authFetch(url, opts={}) {
+  const headers = Object.assign({'Content-Type':'application/json', 'Authorization': `Bearer ${token}`}, opts.headers||{});
+  return fetch(`${API}${url}`, Object.assign({}, opts, {headers}));
+}
+
+// ── Message rendering ─────────────────────────────────────────────────────
+function appendMessage(role, text, chartData) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = formatMarkdown(text || '');
+  div.appendChild(bubble);
+
+  if (chartData) {
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'chart-container';
+    chartDiv.innerHTML = renderChart(chartData);
+    div.appendChild(chartDiv);
+  }
+
+  messages.appendChild(div);
+  scrollBottom();
+}
+
+function appendTyping(id) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message assistant';
+  div.id = id;
+  div.innerHTML = '<div class="bubble typing-indicator"><span></span><span></span><span></span></div>';
+  messages.appendChild(div);
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function scrollBottom() {
+  const messages = document.getElementById('messages');
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// ── Markdown formatter ────────────────────────────────────────────────────
+function formatMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^#{3}\s+(.+)$/gm,'<h3>$1</h3>')
+    .replace(/^#{2}\s+(.+)$/gm,'<h2>$1</h2>')
+    .replace(/^#{1}\s+(.+)$/gm,'<h1>$1</h1>')
+    .replace(/^[-*]\s+(.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+}
+
+// ── Chart renderer ────────────────────────────────────────────────────────
+function renderChart(data) {
+  if (!data || !data.labels || !data.values) return '';
+  const {type, title, labels, values} = data;
+  const max = Math.max(...values, 1);
+
+  if (type === 'bar') {
+    const barW = Math.max(30, Math.floor(320 / labels.length) - 8);
+    const bars = labels.map((lbl,i) => {
+      const h = Math.round((values[i]/max)*100);
+      const colors = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'];
+      const color = colors[i % colors.length];
+      return `<g>
+        <rect x="${i*(barW+8)}" y="${110-h}" width="${barW}" height="${h}" rx="3" fill="${color}"/>
+        <text x="${i*(barW+8)+barW/2}" y="125" text-anchor="middle" font-size="10" fill="var(--text-3)">${lbl}</text>
+        <text x="${i*(barW+8)+barW/2}" y="${105-h}" text-anchor="middle" font-size="10" fill="var(--text-2)">${values[i]}</text>
+      </g>`;
+    }).join('');
+    const svgW = labels.length * (barW+8) + 20;
+    return `<div class="chart-wrap"><div class="chart-title">${title}</div>
+      <svg viewBox="0 0 ${svgW} 140" width="100%" style="overflow:visible">${bars}
+        <line x1="0" y1="110" x2="${svgW}" y2="110" stroke="var(--border)" stroke-width="1"/>
+      </svg></div>`;
+  }
+
+  if (type === 'pie') {
+    const total = values.reduce((a,b)=>a+b,0);
+    const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6'];
+    let angle = -Math.PI/2;
+    const slices = values.map((v,i) => {
+      const a = (v/total)*Math.PI*2;
+      const x1=50+40*Math.cos(angle), y1=50+40*Math.sin(angle);
+      angle+=a;
+      const x2=50+40*Math.cos(angle), y2=50+40*Math.sin(angle);
+      const large=a>Math.PI?1:0;
+      return `<path d="M50,50 L${x1.toFixed(1)},${y1.toFixed(1)} A40,40 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${colors[i%colors.length]}"/>`;
+    }).join('');
+    const legend = labels.map((lbl,i)=>
+      `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)"><span style="width:10px;height:10px;border-radius:2px;background:${colors[i%colors.length]};flex-shrink:0"></span>${lbl} (${values[i]})</div>`
+    ).join('');
+    return `<div class="chart-wrap"><div class="chart-title">${title}</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <svg viewBox="0 0 100 100" width="110" height="110">${slices}</svg>
+        <div style="display:flex;flex-direction:column;gap:4px">${legend}</div>
+      </div></div>`;
+  }
+
+  // line chart
+  const pts = values.map((v,i) => `${(i/(labels.length-1||1))*280},${100-(v/max)*80}`).join(' ');
+  const xLabels = labels.map((lbl,i) =>
+    `<text x="${(i/(labels.length-1||1))*280}" y="118" text-anchor="middle" font-size="9" fill="var(--text-3)">${lbl.slice(0,8)}</text>`
+  ).join('');
+  return `<div class="chart-wrap"><div class="chart-title">${title}</div>
+    <svg viewBox="0 0 300 130" width="100%" style="overflow:visible">
+      <polyline points="${pts}" fill="none" stroke="#6366f1" stroke-width="2"/>
+      ${values.map((v,i)=>`<circle cx="${(i/(labels.length-1||1))*280}" cy="${100-(v/max)*80}" r="3" fill="#6366f1"/>`).join('')}
+      ${xLabels}
+      <line x1="0" y1="100" x2="280" y2="100" stroke="var(--border)" stroke-width="1"/>
+    </svg></div>`;
+}
+
+// ── Conversation actions ───────────────────────────────────────────────────
+async function deleteConversation(e, id) {
+  e.stopPropagation();
+  try {
+    await authFetch(`/api/v1/conversations/${id}`, {method:'DELETE'});
+    if (currentConvId === id) newChat();
+    await loadConversations();
+  } catch(err) { showToast('Delete failed'); }
+}
+
+async function deleteAllConversations() {
+  if (!confirm('Delete all conversations?')) return;
+  try {
+    await authFetch('/api/v1/conversations', {method:'DELETE'});
+    newChat();
+    await loadConversations();
+    showToast('All conversations deleted');
+  } catch(err) { showToast('Delete failed'); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+</script>
+</body>
+</html>
