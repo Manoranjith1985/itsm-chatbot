@@ -49,4 +49,4 @@ async def health():
 
 @app.get("/", include_in_schema=False)
 async def serve_frontend():
-    return FileResponse(INDEX_HTML)
+    return FileResponse(INDEX_HTML, headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"})
