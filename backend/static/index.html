@@ -554,24 +554,56 @@ body.light .toast{background:rgba(255,255,255,0.95);color:#0f172a}
   border:1px solid var(--glass-border);
   color:var(--text2);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:.2s;flex-shrink:0;
+  transition:.2s;flex-shrink:0;position:relative;
 }
 .mic-btn:hover{background:var(--glass-hover);color:var(--text1);border-color:rgba(99,102,241,0.4)}
 .mic-btn.recording{
-  background:rgba(239,68,68,0.15);
-  border-color:rgba(239,68,68,0.5);
+  background:rgba(239,68,68,0.18);
+  border-color:rgba(239,68,68,0.6);
   color:#f87171;
-  animation:mic-pulse 1.2s ease-in-out infinite;
+  animation:mic-pulse 1s ease-in-out infinite;
 }
 @keyframes mic-pulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}
-  50%{box-shadow:0 0 0 9px rgba(239,68,68,0)}
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)}
+  50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}
 }
-.voice-status{
-  font-size:12px;color:var(--text3);
-  padding:4px 2px 0;min-height:18px;transition:.2s;
+/* Voice bar */
+.voice-bar{
+  display:none;
+  align-items:center;gap:10px;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:12px;
+  padding:8px 14px;
+  margin-bottom:8px;
+  backdrop-filter:blur(12px);
+  animation:fadeUp .2s ease;
 }
-.voice-status.active{color:#f87171;font-weight:500}
+.voice-bar.show{display:flex}
+.voice-bar-status{font-size:12px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.voice-bar-status.active{color:#f87171}
+.lang-select{
+  background:var(--glass);border:1px solid var(--glass-border);
+  color:var(--text2);padding:5px 8px;border-radius:8px;
+  font-size:12px;cursor:pointer;outline:none;max-width:160px;
+}
+body.light .lang-select{background:rgba(255,255,255,0.8);color:#0f172a}
+.voice-waves{display:flex;align-items:center;gap:2px;height:20px;flex-shrink:0}
+.voice-waves span{
+  display:inline-block;width:3px;border-radius:2px;
+  background:linear-gradient(to top,#6366f1,#ec4899);
+  animation:wave 0.9s ease-in-out infinite;
+  min-height:4px;
+}
+.voice-waves span:nth-child(1){animation-delay:0s}
+.voice-waves span:nth-child(2){animation-delay:.1s}
+.voice-waves span:nth-child(3){animation-delay:.2s}
+.voice-waves span:nth-child(4){animation-delay:.3s}
+.voice-waves span:nth-child(5){animation-delay:.15s}
+@keyframes wave{
+  0%,100%{height:4px;opacity:.5}
+  50%{height:18px;opacity:1}
+}
 
 </style>
 </head>
@@ -768,7 +800,45 @@ body.light .toast{background:rgba(255,255,255,0.95);color:#0f172a}
             </svg>
           </button>
         </div>
-        <div class="voice-status" id="voice-status"></div>
+        <div class="voice-bar" id="voice-bar">
+          <div class="voice-waves" id="voice-waves">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="voice-bar-status" id="voice-status">Ready</div>
+          <select class="lang-select" id="lang-select" onchange="onLangChange(this.value)" title="Recognition language">
+            <option value="en-US">🇺🇸 English (US)</option>
+            <option value="en-GB">🇬🇧 English (UK)</option>
+            <option value="es-ES">🇪🇸 Spanish</option>
+            <option value="fr-FR">🇫🇷 French</option>
+            <option value="de-DE">🇩🇪 German</option>
+            <option value="it-IT">🇮🇹 Italian</option>
+            <option value="pt-BR">🇧🇷 Portuguese</option>
+            <option value="hi-IN">🇮🇳 Hindi</option>
+            <option value="ta-IN">🇮🇳 Tamil</option>
+            <option value="te-IN">🇮🇳 Telugu</option>
+            <option value="ml-IN">🇮🇳 Malayalam</option>
+            <option value="kn-IN">🇮🇳 Kannada</option>
+            <option value="mr-IN">🇮🇳 Marathi</option>
+            <option value="bn-IN">🇮🇳 Bengali</option>
+            <option value="gu-IN">🇮🇳 Gujarati</option>
+            <option value="ar-SA">🇸🇦 Arabic</option>
+            <option value="zh-CN">🇨🇳 Chinese (Mandarin)</option>
+            <option value="zh-TW">🇹🇼 Chinese (Traditional)</option>
+            <option value="ja-JP">🇯🇵 Japanese</option>
+            <option value="ko-KR">🇰🇷 Korean</option>
+            <option value="ru-RU">🇷🇺 Russian</option>
+            <option value="nl-NL">🇳🇱 Dutch</option>
+            <option value="pl-PL">🇵🇱 Polish</option>
+            <option value="sv-SE">🇸🇪 Swedish</option>
+            <option value="tr-TR">🇹🇷 Turkish</option>
+            <option value="vi-VN">🇻🇳 Vietnamese</option>
+            <option value="th-TH">🇹🇭 Thai</option>
+            <option value="id-ID">🇮🇩 Indonesian</option>
+            <option value="ms-MY">🇲🇾 Malay</option>
+            <option value="uk-UA">🇺🇦 Ukrainian</option>
+          </select>
+          <button class="action-btn danger" onclick="stopVoice()" style="padding:4px 10px;font-size:12px;white-space:nowrap">✕ Stop</button>
+        </div>
       </div>
     </div>
 
@@ -1206,78 +1276,128 @@ function showToast(msg){
 }
 
 // ── Voice / Speech Recognition ────────────────────────────────────────────
-let recognition = null;
-let isRecording = false;
+let recognition  = null;
+let isRecording  = false;
+let selectedLang = localStorage.getItem('itsm_voice_lang') || navigator.language || 'en-US';
 
-function initSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const r = new SR();
-  r.continuous = false;
-  r.interimResults = true;
-  r.lang = 'en-US';
+// Auto-select saved/browser language on load
+window.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('lang-select');
+  if (!sel) return;
+  // Try exact match, then language prefix (e.g. 'hi' matches 'hi-IN')
+  const opts = Array.from(sel.options).map(o => o.value);
+  const match = opts.find(v => v === selectedLang)
+             || opts.find(v => v.startsWith(selectedLang.split('-')[0]));
+  if (match) { sel.value = match; selectedLang = match; }
+});
 
-  r.onstart = () => {
-    isRecording = true;
-    document.getElementById('mic-btn').classList.add('recording');
-    setVoiceStatus('🎙 Listening… speak now', true);
-  };
-
-  r.onresult = (e) => {
-    const transcript = Array.from(e.results)
-      .map(res => res[0].transcript).join('');
-    const input = document.getElementById('chat-input');
-    input.value = transcript;
-    autoResize(input);
-    if (e.results[e.results.length - 1].isFinal) {
-      setVoiceStatus('✅ Got it! Press Send or speak again.', false);
-    } else {
-      setVoiceStatus('🎙 "' + transcript.slice(0, 50) + (transcript.length > 50 ? '…' : '') + '"', true);
-    }
-  };
-
-  r.onerror = (e) => {
-    const msgs = {
-      'not-allowed': '🔒 Microphone blocked. Click the lock icon in your browser address bar to allow access.',
-      'no-speech':   '🤫 No speech detected — try again.',
-      'network':     '🌐 Network error during recognition.',
-    };
-    setVoiceStatus(msgs[e.error] || '⚠️ Error: ' + e.error, false);
-    stopRecording();
-  };
-
-  r.onend = () => { stopRecording(); };
-  return r;
+function onLangChange(lang) {
+  selectedLang = lang;
+  localStorage.setItem('itsm_voice_lang', lang);
+  if (isRecording) { stopVoice(); setTimeout(startVoice, 300); }
 }
 
 function toggleVoice() {
+  if (isRecording) { stopVoice(); return; }
+  startVoice();
+}
+
+function startVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    setVoiceStatus('⚠️ Voice not supported here. Please use Chrome or Edge.', false);
-    setTimeout(() => setVoiceStatus('', false), 4000);
+    showVoiceBar('⚠️ Voice input requires Chrome or Edge browser.', false);
     return;
   }
-  if (isRecording) {
-    if (recognition) recognition.stop();
-    stopRecording();
-    return;
-  }
-  recognition = initSpeechRecognition();
-  if (recognition) recognition.start();
+
+  recognition = new SR();
+  recognition.lang            = selectedLang;
+  recognition.continuous      = true;   // keep listening
+  recognition.interimResults  = true;   // show words as you speak
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    showVoiceBar('🎙 Listening in ' + getLangName(selectedLang) + ' — speak now', true);
+    document.getElementById('voice-waves').style.display = 'flex';
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    const input = document.getElementById('chat-input');
+    // Append final to existing text, show interim in status
+    if (final) {
+      input.value = (input.value + ' ' + final).trim();
+      autoResize(input);
+    }
+    if (interim) {
+      setVoiceStatus('🎙 "' + interim.slice(0, 60) + (interim.length > 60 ? '…' : '') + '"', true);
+    } else if (final) {
+      setVoiceStatus('✅ Captured — keep speaking or press Send', false);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    const msgs = {
+      'not-allowed'  : '🔒 Mic blocked — click the 🔒 in your address bar and allow microphone.',
+      'no-speech'    : '🤫 Nothing heard — try again.',
+      'network'      : '🌐 Network error. Check your connection.',
+      'audio-capture': '🎤 No microphone found.',
+      'aborted'      : '',
+    };
+    const msg = msgs[e.error];
+    if (msg !== '') setVoiceStatus(msg || '⚠️ Error: ' + e.error, false);
+    if (e.error !== 'no-speech') stopVoice();
+  };
+
+  recognition.onend = () => {
+    // Auto-restart if still recording (continuous mode can end unexpectedly)
+    if (isRecording) {
+      try { recognition.start(); } catch(e) { stopVoice(); }
+    }
+  };
+
+  try { recognition.start(); } catch(e) { setVoiceStatus('⚠️ Could not start: ' + e.message, false); }
 }
 
-function stopRecording() {
+function stopVoice() {
   isRecording = false;
-  const btn = document.getElementById('mic-btn');
-  if (btn) btn.classList.remove('recording');
-  setTimeout(() => setVoiceStatus('', false), 3500);
+  if (recognition) { try { recognition.abort(); } catch(e){} recognition = null; }
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('voice-waves').style.display = 'none';
+  const input = document.getElementById('chat-input');
+  if (input.value.trim()) {
+    setVoiceStatus('✅ Done — press Send ↗ to submit', false);
+    setTimeout(() => hideVoiceBar(), 4000);
+  } else {
+    hideVoiceBar();
+  }
 }
 
+function showVoiceBar(msg, active) {
+  document.getElementById('voice-bar').classList.add('show');
+  setVoiceStatus(msg, active);
+}
+function hideVoiceBar() {
+  document.getElementById('voice-bar').classList.remove('show');
+}
 function setVoiceStatus(msg, active) {
   const el = document.getElementById('voice-status');
   if (!el) return;
   el.textContent = msg;
   el.classList.toggle('active', active);
+}
+
+function getLangName(code) {
+  const sel = document.getElementById('lang-select');
+  if (!sel) return code;
+  const opt = Array.from(sel.options).find(o => o.value === code);
+  return opt ? opt.text.replace(/^.{1,4}\s/, '') : code;
 }
 
 </script>
