@@ -261,8 +261,53 @@ body.light .msg.assistant .msg-bubble code{background:rgba(0,0,0,.06)}
 <!-- ── Auth screen ──────────────────────────────────────────────────────── -->
 <div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
   <div class="auth-card">
-    <div class="auth-logo">🤖</div>
-    <h1 class="auth-title">ITSM AI Chatbot</h1>
+    <div class="auth-logo" style="margin-bottom:4px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="220" height="110" style="margin-bottom:8px">
+  <defs>
+    <linearGradient id="swirl" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="30%" stop-color="#ec4899"/>
+      <stop offset="65%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="ugrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="textgrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <!-- Orbit / swirl shape -->
+  <g transform="translate(145,38) rotate(-18)">
+    <ellipse cx="0" cy="0" rx="52" ry="20" fill="none" stroke="url(#swirl)" stroke-width="5" opacity="0.9"/>
+    <ellipse cx="0" cy="0" rx="17" ry="7" fill="#f8f9ff"/>
+    <!-- Highlight streak -->
+    <ellipse cx="-18" cy="-8" rx="14" ry="5" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+  </g>
+  <!-- Pixel dots cluster -->
+  <rect x="191" y="8"  width="9" height="9" rx="1.5" fill="#f97316"/>
+  <rect x="202" y="8"  width="7" height="7" rx="1.2" fill="#ef4444"/>
+  <rect x="191" y="19" width="7" height="7" rx="1.2" fill="#fb923c"/>
+  <rect x="202" y="18" width="5.5" height="5.5" rx="1" fill="#f97316" opacity="0.75"/>
+  <rect x="209" y="10" width="4" height="4" rx="0.8" fill="#fbbf24" opacity="0.6"/>
+  <!-- KRUV text -->
+  <!-- K -->
+  <text x="12" y="112" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="72" fill="url(#textgrad)" letter-spacing="-2">K</text>
+  <!-- R -->
+  <text x="64" y="112" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="72" fill="url(#textgrad)" letter-spacing="-2">R</text>
+  <!-- U with gradient -->
+  <text x="116" y="112" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="72" fill="url(#ugrad)" letter-spacing="-2">U</text>
+  <!-- V -->
+  <text x="172" y="112" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="72" fill="url(#textgrad)" letter-spacing="-2">V</text>
+  <!-- Tagline -->
+  <text x="140" y="132" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#475569">
+    <tspan font-weight="700">Intelligent Solutions.</tspan>
+    <tspan> Designed for Tomorrow.</tspan>
+  </text>
+</svg></div>
+    <h1 class="auth-title" style="font-size:18px;margin-top:0">ITSM AI Chatbot</h1>
     <p class="auth-subtitle">AI-powered IT Service Management</p>
     <div class="auth-tabs">
       <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
@@ -288,7 +333,36 @@ body.light .msg.assistant .msg-bubble code{background:rgba(0,0,0,.06)}
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">🤖 ITSM Bot</div>
+      <div class="sidebar-logo" style="padding:2px 0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 32" width="110" height="32">
+  <defs>
+    <linearGradient id="sg1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="40%" stop-color="#ec4899"/>
+      <stop offset="70%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="ug1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <!-- Orbit swirl -->
+  <ellipse cx="72" cy="9" rx="12" ry="5" fill="none" stroke="url(#sg1)" stroke-width="2.2" transform="rotate(-20,72,9)"/>
+  <ellipse cx="72" cy="9" rx="4" ry="2" fill="#1e1b4b" transform="rotate(-20,72,9)"/>
+  <!-- Pixel dots -->
+  <rect x="81" y="2" width="2.5" height="2.5" rx="0.4" fill="#f97316"/>
+  <rect x="84.5" y="2" width="2" height="2" rx="0.4" fill="#ef4444"/>
+  <rect x="81" y="5.5" width="2" height="2" rx="0.4" fill="#fb923c"/>
+  <rect x="84.5" y="5" width="1.5" height="1.5" rx="0.3" fill="#f97316" opacity="0.7"/>
+  <!-- K -->
+  <text x="0" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#1e293b">K</text>
+  <!-- R -->
+  <text x="14" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#1e293b">R</text>
+  <!-- U with gradient -->
+  <text x="28" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="url(#ug1)">U</text>
+  <!-- V -->
+  <text x="43" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#1e293b">V</text>
+</svg></div>
       <button id="theme-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌙 Dark</button>
     </div>
     <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
