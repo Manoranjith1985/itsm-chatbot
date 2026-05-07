@@ -315,6 +315,40 @@ tbody tr:hover td{background:#fafbff}
 .stat-card:hover{box-shadow:var(--shadow-md)}
 .stat-card .num{font-size:26px;font-weight:800;color:var(--accent)}
 .stat-card .lbl{font-size:12px;color:var(--text3);margin-top:3px}
+
+/* ── User profile dropdown ─────────────────────────────────────────── */
+.user-menu-wrap{position:relative}
+.user-menu-btn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;transition:.15s;width:100%}
+.user-menu-btn:hover{background:rgba(0,0,0,.05)}
+.user-menu-chevron{font-size:10px;color:var(--text3);margin-left:auto;transition:.2s}
+.user-menu-dropdown{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:200;display:none}
+.user-menu-dropdown.open{display:block}
+.user-menu-item{display:flex;align-items:center;gap:9px;padding:10px 14px;font-size:13px;color:var(--text1);cursor:pointer;transition:.15s;border:none;background:none;width:100%;text-align:left}
+.user-menu-item:hover{background:var(--bg)}
+.user-menu-item.danger{color:var(--danger)}
+.user-menu-item.danger:hover{background:var(--danger-bg)}
+.user-menu-sep{height:1px;background:var(--border);margin:3px 0}
+
+/* ── Change-password modal ─────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:28px 28px 24px;width:380px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.modal-title{font-size:16px;font-weight:700;color:var(--text1);margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn-ghost{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--text2);transition:.15s}
+.btn-ghost:hover{background:var(--bg)}
+
+/* ── Forgot-password panel ─────────────────────────────────────────── */
+#forgot-form{display:none}
+#reset-form{display:none}
+.reset-code-box{background:var(--accent-bg);border:1.5px solid #c7d2fe;border-radius:8px;padding:12px 14px;margin:10px 0 14px;display:none}
+.reset-code-box .code-val{font-size:26px;font-weight:800;color:var(--accent);letter-spacing:4px;text-align:center;margin:4px 0 8px}
+.reset-code-box .code-hint{font-size:11px;color:var(--text3);text-align:center}
+.forgot-link{font-size:12px;color:var(--accent);cursor:pointer;text-align:right;display:block;margin-top:6px;margin-bottom:14px;background:none;border:none;padding:0;width:100%;text-align:right}
+.forgot-link:hover{text-decoration:underline}
+.back-link{font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:4px}
+.back-link:hover{color:var(--accent)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--text1);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;z-index:999;box-shadow:var(--shadow-lg)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -364,7 +398,29 @@ tbody tr:hover td{background:#fafbff}
     <div id="login-form">
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doLogin()"/></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="forgot-link" onclick="switchTab('forgot')">Forgot password?</button>
       <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    </div>
+    <!-- FORGOT PASSWORD -->
+    <div id="forgot-form">
+      <button class="back-link" onclick="switchTab('login')">← Back to Sign In</button>
+      <div class="form-group"><label>Email</label><input type="email" id="forgot-email" placeholder="Enter your account email"/></div>
+      <div id="reset-code-box" class="reset-code-box">
+        <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:2px">Your Reset Code</div>
+        <div class="code-val" id="reset-code-val">------</div>
+        <div class="code-hint">Valid for 30 minutes · Keep it safe</div>
+        <button style="display:block;margin:10px auto 0;padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;color:var(--accent)" onclick="copyResetCode()">Copy Code</button>
+      </div>
+      <button class="btn-primary" onclick="doForgotPassword()">Send Reset Code →</button>
+      <div style="text-align:center;margin-top:12px"><span style="font-size:12px;color:var(--text3)">Have a code? </span><button class="forgot-link" style="display:inline;width:auto" onclick="switchTab('reset')">Reset password →</button></div>
+    </div>
+    <!-- RESET PASSWORD -->
+    <div id="reset-form">
+      <button class="back-link" onclick="switchTab('forgot')">← Back</button>
+      <div class="form-group"><label>Email</label><input type="email" id="reset-email" placeholder="Your account email"/></div>
+      <div class="form-group"><label>Reset Code</label><input type="text" id="reset-token" placeholder="6-digit code" maxlength="6" style="letter-spacing:4px;font-size:18px;font-weight:700;text-align:center"/></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="reset-newpass" placeholder="Min 6 characters"/></div>
+      <button class="btn-primary" onclick="doResetPassword()">Set New Password →</button>
     </div>
     <div id="register-form" style="display:none">
       <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@company.com"/></div>
@@ -416,13 +472,21 @@ tbody tr:hover td{background:#fafbff}
     <div class="nav-item" id="nav-chat" onclick="switchScreen('chat')"><span class="nav-icon">💬</span>AI Chat<span class="nav-badge info">AI</span></div>
     <div class="nav-item" id="nav-docs" onclick="switchScreen('docs')"><span class="nav-icon">📁</span>Documents</div>
 
-    <div class="sidebar-footer">
-      <div class="user-avatar" id="user-avatar">U</div>
-      <div style="min-width:0;flex:1">
-        <div id="user-email-display" style="font-size:12px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-        <div id="user-role-display" style="font-size:11px;color:var(--text3)"></div>
+    <div class="sidebar-footer user-menu-wrap">
+      <button class="user-menu-btn" onclick="toggleUserMenu()" id="user-menu-trigger">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div style="min-width:0;flex:1;text-align:left">
+          <div id="user-email-display" style="font-size:12px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="user-role-display" style="font-size:11px;color:var(--text3)"></div>
+        </div>
+        <span class="user-menu-chevron" id="user-chevron">▲</span>
+      </button>
+      <div class="user-menu-dropdown" id="user-menu-dropdown">
+        <button class="user-menu-item" onclick="showProfile()">👤 &nbsp;My Profile</button>
+        <button class="user-menu-item" onclick="showChangePassword()">🔑 &nbsp;Change Password</button>
+        <div class="user-menu-sep"></div>
+        <button class="user-menu-item danger" onclick="logout()">↩ &nbsp;Sign Out</button>
       </div>
-      <button class="logout-btn" onclick="logout()">↩</button>
     </div>
   </div>
 
@@ -821,7 +885,11 @@ function switchTab(t){
   document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
   document.getElementById('login-form').style.display=t==='login'?'':'none';
   document.getElementById('register-form').style.display=t==='register'?'':'none';
+  document.getElementById('forgot-form').style.display=t==='forgot'?'':'none';
+  document.getElementById('reset-form').style.display=t==='reset'?'':'none';
   document.getElementById('auth-error').style.display='none';
+  // hide reset code box when re-entering forgot panel
+  if(t==='forgot') document.getElementById('reset-code-box').style.display='none';
 }
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
@@ -1038,6 +1106,159 @@ function stopVoice(){isRecording=false;if(recognition)try{recognition.abort();}c
 function showVoiceBar(msg,active){document.getElementById('voice-bar').classList.add('show');setVoiceStatus(msg,active);}
 function hideVoiceBar(){document.getElementById('voice-bar').classList.remove('show');}
 function setVoiceStatus(msg,active){const el=document.getElementById('voice-status');if(!el)return;el.textContent=msg;el.classList.toggle('active',active);}
+
+// ── User menu ───────────────────────────────────────────────────────────
+function toggleUserMenu(){
+  const d=document.getElementById('user-menu-dropdown');
+  const c=document.getElementById('user-chevron');
+  const isOpen=d.classList.toggle('open');
+  c.textContent=isOpen?'▼':'▲';
+}
+document.addEventListener('click',function(e){
+  const wrap=document.querySelector('.user-menu-wrap');
+  if(wrap&&!wrap.contains(e.target)){
+    document.getElementById('user-menu-dropdown').classList.remove('open');
+    document.getElementById('user-chevron').textContent='▲';
+  }
+});
+
+// ── Profile modal ───────────────────────────────────────────────────────
+async function showProfile(){
+  toggleUserMenu();
+  document.getElementById('profile-avatar-lg').textContent=(userEmail[0]||'U').toUpperCase();
+  document.getElementById('profile-email-lg').textContent=userEmail;
+  document.getElementById('profile-email-val').textContent=userEmail;
+  document.getElementById('profile-role-val').textContent=userRole||'viewer';
+  // fetch joined date
+  try{
+    const r=await authFetch('/api/v1/auth/me');
+    if(r.ok){const me=await r.json();
+      document.getElementById('profile-date-val').textContent=me.created_at||'—';
+      const roleBadge=`<span class="role-badge role-${me.role}">${me.role}</span>`;
+      document.getElementById('profile-role-lg').innerHTML=roleBadge;
+    }
+  }catch(e){}
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+// ── Change password modal ───────────────────────────────────────────────
+function showChangePassword(){
+  if(document.getElementById('user-menu-dropdown').classList.contains('open')) toggleUserMenu();
+  document.getElementById('cp-current').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-confirm').value='';
+  document.getElementById('change-pw-error').style.display='none';
+  document.getElementById('change-pw-modal').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+async function doChangePassword(){
+  const cur=document.getElementById('cp-current').value;
+  const nw=document.getElementById('cp-new').value;
+  const cf=document.getElementById('cp-confirm').value;
+  const err=document.getElementById('change-pw-error');
+  err.style.display='none';
+  if(!cur||!nw||!cf){err.textContent='Please fill all fields.';err.style.display='';return;}
+  if(nw.length<6){err.textContent='New password must be at least 6 characters.';err.style.display='';return;}
+  if(nw!==cf){err.textContent='New passwords do not match.';err.style.display='';return;}
+  const btn=document.querySelector('#change-pw-modal .btn-primary');
+  btn.textContent='Updating…';btn.disabled=true;
+  try{
+    const r=await authFetch('/api/v1/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:cur,new_password:nw})});
+    const d=await r.json();
+    if(!r.ok){err.textContent=d.detail||'Failed to update password.';err.style.display='';return;}
+    closeModal('change-pw-modal');
+    showToast('✅ Password updated successfully!');
+  }catch(e){err.textContent='Cannot reach server.';err.style.display='';}
+  finally{btn.textContent='Update Password';btn.disabled=false;}
+}
+
+// ── Forgot / Reset password ─────────────────────────────────────────────
+async function doForgotPassword(){
+  const email=document.getElementById('forgot-email').value.trim();
+  if(!email) return showAuthError('Please enter your email address');
+  const btn=document.querySelector('#forgot-form .btn-primary');
+  btn.textContent='Generating code…';btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/api/v1/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const d=await r.json();
+    if(!r.ok) return showAuthError(d.detail||'Failed to generate reset code');
+    if(d.reset_token){
+      document.getElementById('reset-code-val').textContent=d.reset_token;
+      document.getElementById('reset-code-box').style.display='';
+      // pre-fill reset form
+      document.getElementById('reset-email').value=email;
+      document.getElementById('reset-token').value=d.reset_token;
+    }
+    showAuthError('');
+  }catch(e){showAuthError('Cannot reach server.');}
+  finally{btn.textContent='Send Reset Code →';btn.disabled=false;}
+}
+
+function copyResetCode(){
+  const code=document.getElementById('reset-code-val').textContent;
+  navigator.clipboard.writeText(code).then(()=>showToast('📋 Reset code copied!'));
+}
+
+async function doResetPassword(){
+  const email=document.getElementById('reset-email').value.trim();
+  const tok=document.getElementById('reset-token').value.trim();
+  const nw=document.getElementById('reset-newpass').value;
+  if(!email||!tok||!nw) return showAuthError('Please fill all fields');
+  if(nw.length<6) return showAuthError('Password must be at least 6 characters');
+  const btn=document.querySelector('#reset-form .btn-primary');
+  btn.textContent='Resetting…';btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/api/v1/auth/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,token:tok,new_password:nw})});
+    const d=await r.json();
+    if(!r.ok) return showAuthError(d.detail||'Reset failed');
+    showToast('✅ Password reset! Please sign in.');
+    switchTab('login');
+    document.getElementById('login-email').value=email;
+  }catch(e){showAuthError('Cannot reach server.');}
+  finally{btn.textContent='Set New Password →';btn.disabled=false;}
+}
+
 </script>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="change-pw-modal">
+  <div class="modal-box">
+    <div class="modal-title">Change Password</div>
+    <div class="modal-sub">Enter your current password and choose a new one.</div>
+    <div id="change-pw-error" class="auth-error" style="margin-bottom:10px"></div>
+    <div class="form-group"><label>Current Password</label><input type="password" id="cp-current" placeholder="Your current password"/></div>
+    <div class="form-group"><label>New Password</label><input type="password" id="cp-new" placeholder="Min 6 characters"/></div>
+    <div class="form-group"><label>Confirm New Password</label><input type="password" id="cp-confirm" placeholder="Repeat new password"/></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('change-pw-modal')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:9px 20px" onclick="doChangePassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal-box">
+    <div class="modal-title">My Profile</div>
+    <div class="modal-sub">Your account information</div>
+    <div style="display:flex;align-items:center;gap:16px;background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;flex-shrink:0" id="profile-avatar-lg">U</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text1)" id="profile-email-lg"></div>
+        <div id="profile-role-lg" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text2)">
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Email</span><span id="profile-email-val" style="font-weight:600"></span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text3)">Role</span><span id="profile-role-val" style="font-weight:600;text-transform:capitalize"></span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0"><span style="color:var(--text3)">Member Since</span><span id="profile-date-val" style="font-weight:600"></span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('profile-modal')">Close</button>
+      <button class="btn-primary" style="width:auto;padding:9px 20px" onclick="closeModal('profile-modal');showChangePassword()">Change Password</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

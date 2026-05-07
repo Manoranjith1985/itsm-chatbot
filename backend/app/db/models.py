@@ -26,6 +26,8 @@ class ITSMConfig(BaseModel):
     email: Optional[str] = None
     encrypted_token: str
     is_active: bool = True
+    reset_token: Optional[str] = None
+    reset_token_expiry: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -35,6 +37,8 @@ class User(Document):
     role: UserRole = UserRole.viewer
     itsm_configs: List[ITSMConfig] = []
     is_active: bool = True
+    reset_token: Optional[str] = None
+    reset_token_expiry: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
