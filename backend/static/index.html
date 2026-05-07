@@ -1233,6 +1233,123 @@ async function doResetPassword(){
   finally{btn.textContent='Set New Password →';btn.disabled=false;}
 }
 
+
+// ── Toggle password visibility ──────────────────────────────────────
+function togglePwVis(inputId, btn){
+  const el=document.getElementById(inputId);
+  if(el.type==='password'){el.type='text';btn.textContent='🙈';}
+  else{el.type='password';btn.textContent='👁';}
+}
+
+// ── Add User ─────────────────────────────────────────────────────────
+function showAddUser(){
+  document.getElementById('au-email').value='';
+  document.getElementById('au-pass').value='';
+  document.getElementById('au-role').value='viewer';
+  document.getElementById('add-user-error').style.display='none';
+  document.getElementById('add-user-modal').classList.add('open');
+}
+async function doAddUser(){
+  const email=document.getElementById('au-email').value.trim();
+  const pass=document.getElementById('au-pass').value;
+  const role=document.getElementById('au-role').value;
+  const err=document.getElementById('add-user-error');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='Please fill all fields.';err.style.display='';return;}
+  if(pass.length<6){err.textContent='Password must be at least 6 characters.';err.style.display='';return;}
+  const btn=document.querySelector('#add-user-modal .btn-primary');
+  btn.textContent='Creating…';btn.disabled=true;
+  try{
+    const r=await authFetch('/api/v1/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,role})});
+    const d=await r.json();
+    if(!r.ok){err.textContent=d.detail||'Failed to create user.';err.style.display='';return;}
+    closeModal('add-user-modal');
+    showToast('✅ User created: '+email);
+    loadAdminData();
+  }catch(e){err.textContent='Cannot reach server.';err.style.display='';}
+  finally{btn.textContent='Create User';btn.disabled=false;}
+}
+
+// ── Admin Reset Password ─────────────────────────────────────────────
+function showAdminReset(uid, email){
+  document.getElementById('reset-target-uid').value=uid;
+  document.getElementById('reset-target-email').textContent=email;
+  document.getElementById('ar-newpass').value='';
+  document.getElementById('ar-confirm').value='';
+  document.getElementById('admin-reset-error').style.display='none';
+  document.getElementById('admin-reset-modal').classList.add('open');
+}
+async function doAdminResetPassword(){
+  const uid=document.getElementById('reset-target-uid').value;
+  const nw=document.getElementById('ar-newpass').value;
+  const cf=document.getElementById('ar-confirm').value;
+  const err=document.getElementById('admin-reset-error');
+  err.style.display='none';
+  if(!nw||!cf){err.textContent='Please fill all fields.';err.style.display='';return;}
+  if(nw.length<6){err.textContent='Password must be at least 6 characters.';err.style.display='';return;}
+  if(nw!==cf){err.textContent='Passwords do not match.';err.style.display='';return;}
+  const btn=document.querySelector('#admin-reset-modal .btn-primary');
+  btn.textContent='Resetting…';btn.disabled=true;
+  try{
+    const r=await authFetch(`/api/v1/admin/users/${uid}/password`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_password:nw})});
+    const d=await r.json();
+    if(!r.ok){err.textContent=d.detail||'Failed to reset password.';err.style.display='';return;}
+    closeModal('admin-reset-modal');
+    showToast('✅ Password reset successfully!');
+  }catch(e){err.textContent='Cannot reach server.';err.style.display='';}
+  finally{btn.textContent='Reset Password';btn.disabled=false;}
+}
+
+// ── AI Dashboard Builder ──────────────────────────────────────────────
+function startDashboardBuilder(){
+  switchScreen('chat');
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('messages').style.display='flex';
+  document.getElementById('suggestions').style.display='none';
+  const div=document.createElement('div');
+  div.className='msg assistant';
+  div.innerHTML=`
+    <div class="dash-builder-panel">
+      <div class="dash-builder-title">🏗️ AI PMO Dashboard Builder</div>
+      <div class="dash-builder-sub">I will build a customised PMO dashboard for you. Answer the questions below, or paste your full BRD in one message.</div>
+      <div class="brd-step"><div class="brd-num">1</div><div><strong>Project / Programme name</strong> — what are we tracking?</div></div>
+      <div class="brd-step"><div class="brd-num">2</div><div><strong>Team size &amp; structure</strong> — how many people, any sub-teams?</div></div>
+      <div class="brd-step"><div class="brd-num">3</div><div><strong>Key metrics</strong> — delivery rate, SLA compliance, risk count, milestones…?</div></div>
+      <div class="brd-step"><div class="brd-num">4</div><div><strong>Pain points / priorities</strong> — what do you most need to monitor?</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:13px;color:var(--text2)">Type your answers (or paste your BRD) and I will generate a live dashboard for you. ✨</div>`;
+  document.getElementById('messages').appendChild(div);
+  const inp=document.getElementById('chat-input');
+  inp.value='Build me a PMO dashboard. ';
+  inp.focus();
+  scrollBottom();
+}
+
+function renderDashboardSpec(spec){
+  if(!spec||typeof spec!=='object') return '';
+  const kpis=(spec.kpis||[]).map(k=>`
+    <div class="dash-spec-kpi">
+      <div style="font-size:20px">${k.icon||'📊'}</div>
+      <div class="sv" style="color:${k.color||'var(--accent)'}">${k.value}</div>
+      <div class="sl">${k.label}</div>
+    </div>`).join('');
+  const mils=(spec.milestones||[]).map(m=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+      <div style="flex:1;font-size:13px;font-weight:600;color:var(--text1)">${m.name}</div>
+      <div style="width:120px"><div class="progress-bar"><div class="progress-fill" style="width:${m.pct||0}%;background:${m.pct>=80?'#10b981':m.pct>=50?'#f59e0b':'#ef4444'}"></div></div></div>
+      <div style="font-size:12px;font-weight:700">${m.pct||0}%</div>
+      <span class="badge ${m.status==='on-track'?'green':m.status==='at-risk'?'amber':'red'}">${m.status||'—'}</span>
+    </div>`).join('');
+  return `
+    <div class="dash-builder-panel" style="margin-top:10px">
+      <div class="dash-builder-title">📊 ${spec.title||'Your PMO Dashboard'}</div>
+      ${spec.subtitle?`<div class="dash-builder-sub">${spec.subtitle}</div>`:''}
+      ${kpis?`<div class="dash-spec-grid">${kpis}</div>`:''}
+      ${mils?`<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Milestones</div>${mils}</div>`:''}
+      <button class="btn-sm" style="margin-top:14px;background:var(--accent);color:#fff;border-color:var(--accent)" onclick="switchScreen('dashboard')">Open Full Dashboard →</button>
+    </div>`;
+}
+
 </script>
 
 <!-- CHANGE PASSWORD MODAL -->
